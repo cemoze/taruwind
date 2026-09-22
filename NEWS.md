@@ -10,7 +10,9 @@ First public-version candidate, not yet published.
 - Geographic preparation and ERA5-to-current-solver convenience workflow.
 - Optional explicit WorldCover acquisition with documented roughness lookup.
 - Reusable geographic responses, UTC/local timestamps and consistent site IDs.
-- Linux/Windows/macOS CI template (remote execution pending publication).
+- Bounded local-area wind rasters, aligned elevation and roughness layers, and
+  a base-R map plotting helper.
+- Linux, Windows and macOS package checks in the private GitHub repository.
 - Automatic latitude-based neutral depth and resumable CDS FSR reference
   acquisition, with an explicit diagnostic convention and provenance.
 

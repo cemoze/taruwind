@@ -3,8 +3,9 @@
 ## Start here
 
 **[Step-by-step getting-started guide](inst/doc/getting-started.md)** —
-installation check, first coordinate, downloads, interpreting results,
-saving/reusing responses and troubleshooting.
+one connected Istanbul example, from coordinates and downloads to interpreting
+results, extracting the four raw ERA5 nodes, saving/reusing responses, adding
+a second site and mapping terrain inputs and a small local area.
 
 The formatted guide is also installed locally:
 
@@ -19,6 +20,9 @@ You do not need to call all exported functions in sequence.
 | Task | Entry point |
 |---|---|
 | Coordinates + period, automatic data preparation | `taruwind_downscale()` |
+| Small local wind map for a period | `taruwind_downscale_area()` |
+| Aligned elevation and roughness maps | `taruwind_site_layers()` |
+| Draw an input or wind raster | `taruwind_plot_map()` |
 | Previously prepared response + new period | `taruwind_downscale(responses = ...)` |
 | Prepared response + your own wind components | `taruwind_predict()` |
 | Georeferenced DEM and roughness rasters | `taruwind_prepare_site()` |
@@ -36,10 +40,37 @@ the default cache is session-temporary.
 `wind_speed` in the geographic output is **vector-bilinear ERA5**;
 `taruwind_speed` is the final downscaled speed, both in m/s. The `u`/`v`
 columns remain ERA5 input components, not downscaled output components.
+`u10`/`v10` (or `u100`/`v100`) are height-specific aliases of `u`/`v`.
+To retrieve the four surrounding grid-node series, use
+`taruwind_download_era5(include_nodes = TRUE)` and read `attr(era5, "nodes")`.
+When reusing the main workflow's cache, pass `file.path(cache, "era5")` to this
+helper. The guide includes a complete example and a separate node CSV export.
 
-**Recommended order:** offline flat-terrain check below → one-coordinate
-integration example in the guide → inspect output → save responses → expand
-to normal domain size, longer periods and multiple sites. An initial terrain
+For a small area around the same example coordinate, request aligned static
+inputs and hourly wind maps. A separate response is built for each output
+cell, so begin with a coarse output grid:
+
+```r
+cache = file.path(tools::R_user_dir("taruwind", "cache"), "first-example")
+input_maps = taruwind_site_layers(29.02, 41.02, roughness = "worldcover",
+  domain_m = 990, cache_dir = file.path(cache, "dem"))
+taruwind_plot_map(input_maps, layer = c("elevation_m", "roughness_m"))
+
+area = taruwind_downscale_area(29.02, 41.02,
+  start = "2020-01-01 00:00:00", end = "2020-01-01 02:00:00",
+  roughness = "worldcover", area_m = 990, map_resolution = 500,
+  domain_m = 990, workers = 1, cache_dir = cache)
+taruwind_plot_map(area$maps, layer = "taruwind_20200101T000000Z")
+```
+
+The example creates a 3 × 3 output grid and uses a 990 m terrain domain as a
+software check. The normal terrain-domain default is 30 km. The area result
+contains the cell coordinates, site-hour table and time-labelled rasters.
+Output-cell spacing and terrain-grid resolution are separate settings.
+
+**Recommended order:** follow the one-coordinate guide → inspect output and
+raw ERA5 nodes → save responses → map aligned inputs → try the local area
+example → expand to a suitable domain and period. An initial terrain
 solve is distinct from the much cheaper application of a prepared response.
 
 ## Technical overview and examples
@@ -106,8 +137,9 @@ later = taruwind_downscale(
 optional `site_id`. Output is a tibble; UTC is default, `local_tz = TRUE` adds
 coordinate-specific local timestamps with `lutz`. Geographic downloads and
 raster preparation are serial to avoid cache races; response construction
-uses automatic portable workers with a memory guard. No national-map convenience API is
-claimed. Missing raster coverage is an error, never silently filled.
+uses automatic portable workers with a memory guard. The bounded local-area
+helper computes independent responses at each output-cell centre. Missing
+raster coverage is an error, never silently filled.
 
 Source roughness is never guessed from target land cover. If omitted, it is
 obtained from the ERA5 FSR reference climatology (default 2021, all months/hours)

@@ -1,22 +1,25 @@
 ---
-title: "TaruWind 0.1.0 — Getting started"
+title: "TaruWind 0.1.0 — A first wind-downscaling workflow in Istanbul"
 lang: en
 ---
 
-## Where should I start?
+## The story: one location, from coordinates to reusable predictions
 
 You do not need to learn every function. **Start with `taruwind_downscale()`
 when you have coordinates and a period.** It combines data acquisition,
 raster preparation and the current solver. No target observations are required.
 
-Recommended order: **offline check → one coordinate → inspect results → save
-the response → expand the domain, period and number of sites.**
+Suppose you want a wind-speed series at **29.02° E, 41.02° N in Istanbul**.
+We will request the first three hours of 1 January 2020, compare the resulting
+speeds, save our work and reuse the same terrain response for the following day.
+This is an illustrative coordinate, not a claim of an instrumented station.
 
-**For your first run, follow Sections 1–5.** Section 6 is an optional, larger
-example. Section 7 is an advanced alternative, not another required setup step.
-You do not need to obtain or create any `my-*.nc` or `my-*.tif` files.
+**Follow Sections 1–8 in order in the same R session.** Each step uses objects
+created earlier. Installation commands are needed only once. The later reference
+sections explain extensions; they are not extra steps required to complete the
+example. No local NetCDF or raster files need to be prepared manually.
 
-## 1. Check your installation without downloading data
+## 1. Open R and define our Istanbul example
 
 In RStudio, select **Session → Restart R** (`Ctrl+Shift+F10`), then run:
 
@@ -27,21 +30,22 @@ find.package("taruwind")
 ?taruwind
 ```
 
-Try a synthetic flat surface first:
+Define the location and requested hours once. All subsequent steps use these
+objects rather than introducing a different example. Times are UTC and both
+endpoints are included: this request contains **three**, not two, hourly records.
 
 ```r
-h = matrix(0, 5, 5)
-op = taruwind_build(
-  dem = h, roughness = h + 0.03, dx = 90,
-  x0 = 0, y0 = 0, x = 180, y = 180,
-  depth = 900, source_z0 = 0.03
-)
-taruwind_predict(op, u = c(3, 0), v = c(4, 0))
-# Expected speed: approximately 5 and 0 m/s
+site = data.frame(site_id = "istanbul_example", lon = 29.02, lat = 41.02)
+start_utc = "2020-01-01 00:00:00"
+end_utc = "2020-01-01 02:00:00"
+cache = file.path(tools::R_user_dir("taruwind", "cache"), "first-example")
+output_dir = file.path(getwd(), "taruwind-istanbul-example")
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 ```
 
-This checks installation, not field accuracy. The values 900 and 0.03 are
-synthetic inputs; do not copy them blindly into a real-site analysis.
+`cache` holds reusable downloaded inputs; `output_dir` will hold our saved results.
+Print either variable to see its full path. No files are deleted
+by this example.
 
 ## 2. Prepare for real data
 
@@ -89,7 +93,7 @@ Existing credentials may already be sufficient. **Do not put your API key in
 scripts, GitHub or chat messages.** DEM and WorldCover downloads do not require
 a CDS key. The package does not require Python.
 
-## 3. Your first coordinate: a three-hour smoke test
+## 3. Obtain the first three hours at our site
 
 This example uses a terrain domain approximately 1 km wide. **The 990 m domain
 is only an installation/integration check, not the normal study domain.**
@@ -99,11 +103,9 @@ directory. The example below explicitly chooses a persistent user cache so
 downloads and queued CDS requests can be reused after restarting R.
 
 ```r
-cache = file.path(tools::R_user_dir("taruwind", "cache"), "first-example")
 wind = taruwind_downscale(
-  lon = 29.02, lat = 41.02,
-  start = "2020-01-01 00:00:00",
-  end   = "2020-01-01 02:00:00",
+  sites = site,
+  start = start_utc, end = end_utc,
   roughness = "worldcover",
   domain_m = 990, resolution = 90, workers = 1,
   cache_dir = cache
@@ -126,7 +128,7 @@ computation; initial preparation at complex sites can take several minutes.
 **Shortening the period does not shrink the terrain solve.** A 30 km domain
 is not a universal guarantee of adequacy for every landscape.
 
-## 4. Understand and plot the output
+## 4. Follow what happened during that call
 
 ### Progress and downloaded files
 
@@ -159,7 +161,10 @@ pass `responses` as shown below to avoid reconstructing that response.
 DEM acquisition currently caches complete GLO-90 tiles. WorldCover acquisition
 reads raster windows. A short wind period does not reduce these static inputs.
 
-### Output columns
+## 5. Inspect and plot our first result
+
+The `wind` tibble now contains our three Istanbul records. The two speed
+columns are the input baseline and the model output, not two observation series.
 
 | Column | Meaning |
 |---|---|
@@ -172,6 +177,19 @@ reads raster windows. A short wind period does not reduce these static inputs.
 
 The `u10`/`v10` or `u100`/`v100` columns are also **input** components, not
 downscaled output components. This version returns speed as its final product.
+At 10 m, `u10` equals `u` and `v10` equals `v`: these are height-specific
+aliases, not additional predictions or surrounding grid values. To inspect a
+compact view without removing attributes from the original object:
+
+```r
+wind_view = wind[, c("site_id", "timestamp_utc", "wind_height_m",
+                     "u", "v", "wind_speed", "taruwind_speed")]
+wind_view
+```
+
+Specifically, `wind_speed = sqrt(u^2 + v^2)` **after** interpolating the
+components. It is vector-bilinear speed, not scalar interpolation of the four
+node speeds. `taruwind_speed` is the final model estimate.
 
 ```r
 wind$increment = wind$taruwind_speed - wind$wind_speed
@@ -183,22 +201,60 @@ legend("topright", c("ERA5 Bilinear", "TaruWind"),
        col = c("#0072B2", "#D55E00"), lty = 1, bty = "n")
 ```
 
+This uses ordinary R graphics, not a special TaruWind plotting function. In
+RStudio the figure appears in the Plots pane. It is a short demonstration, not
+a climatology. You can use the same tibble with ggplot2 for longer series.
+
 A difference between models is not itself an accuracy gain. Independent
 observations are needed to assess accuracy.
 
-## 5. Save the response and reuse it
+### Retrieve the four ERA5 input nodes for these same hours
+
+The downloaded data are not limited to the target prediction. The ERA5 helper
+can return each surrounding node's wind components, speed, coordinates and
+interpolation weight. Reuse the **`era5` subdirectory** of our existing cache:
+
+```r
+era5 = taruwind_download_era5(
+  sites = site, start = start_utc, end = end_utc, wind_height = 10,
+  include_nodes = TRUE, cache_dir = file.path(cache, "era5")
+)
+nodes = attr(era5, "nodes")
+nodes[, c("site_id", "timestamp_utc", "node", "node_lon", "node_lat",
+          "weight", "u", "v", "wind_speed")]
+saveRDS(era5, file.path(output_dir, "era5-with-nodes.rds"))
+write.csv(as.data.frame(nodes), file.path(output_dir, "era5-four-nodes.csv"),
+          row.names = FALSE)
+```
+
+For this example there are 12 rows: four nodes for each of three hours.
+These are native ERA5 grid values exposed by the data store, before our
+interpolation or terrain correction. Cached historical wind chunks are reused;
+metadata may still be checked. `wind` itself does not request these raw series:
+`include_nodes` currently belongs to `taruwind_download_era5()`, not
+`taruwind_downscale()`. RDS preserves the node attribute; exporting only the
+main `era5` tibble to CSV would omit it, hence the separate node CSV above.
+
+## 6. Save our result and predict the following day
+
+We now retain both the output and the terrain response built for this exact
+location. The response can be applied to new hours without solving the same
+terrain again. Download caching alone would not achieve this.
 
 ```r
 responses = attr(wind, "responses")
-saveRDS(responses, "taruwind-responses.rds")
-saveRDS(wind, "taruwind-first-result.rds")
-write.csv(as.data.frame(wind), "taruwind-first-result.csv", row.names = FALSE)
+saveRDS(responses, file.path(output_dir, "responses.rds"))
+saveRDS(wind, file.path(output_dir, "first-three-hours.rds"))
+write.csv(as.data.frame(wind), file.path(output_dir, "first-three-hours.csv"),
+          row.names = FALSE)
 
 later = taruwind_downscale(
-  lon = 29.02, lat = 41.02,
+  sites = site,
   period = c("2020-01-02", "2020-01-02"),
   responses = responses, cache_dir = cache
 )
+nrow(later)  # 24 hourly records for the same location
+saveRDS(later, file.path(output_dir, "following-day.rds"))
 ```
 
 Identical start/end dates select all 24 hours of that UTC day; endpoints are
@@ -206,28 +262,130 @@ inclusive. This reused response still belongs to the **990 m test domain**.
 Reusing it does not enlarge the domain. Build a new response for a normal 30 km
 analysis.
 
-In another session, use `responses = readRDS("taruwind-responses.rds")`.
+In another session, recreate `site`, `cache` and `output_dir` from Step 1,
+then load `responses = readRDS(file.path(output_dir, "responses.rds"))`
+before running the `later` call.
 CSV does not preserve model/provenance attributes; use RDS for that purpose.
 
 Rebuild whenever you change the DEM, roughness, resolution, domain, coordinates,
 height or source profile. Supplying new raster arguments alongside `responses`
 does not update the saved response.
 
-## 6. Multiple sites, local time and 100 m winds
+## 7. Inspect the inputs behind this same prediction
 
-After the single-site example works:
+Our first workflow is complete. If you want to understand its source-profile
+inputs, inspect the cached profile for the **same Istanbul coordinate**. This
+does not require a file called `my-era5-fsr.nc` or a second manual setup.
 
 ```r
-sites = data.frame(site_id = c("site_a", "site_b"),
-                    lon = c(29.02, 29.04), lat = c(41.02, 41.04))
+profile = taruwind_source_profile(
+  lon = site$lon, lat = site$lat,
+  cache_dir = file.path(cache, "source_profile"), quiet = FALSE
+)
+profile$source_z0
+profile$depth
+responses[[1]]$provenance
+attr(wind, "forcing_provenance")
+```
+
+These describe the inputs and response that generated our result. They are
+not instructions to fit a new model to observations. The source-reference
+convention is described under Assumptions below.
+
+## 8. Map the inputs and a small surrounding area
+
+First, look at the **same elevation and roughness layers** used when preparing
+our Istanbul response. `taruwind_site_layers()` uses the same alignment routine
+as the solver. It reuses downloaded tiles in our cache and does not acquire
+wind. The two layers are metres of elevation and metres of aerodynamic
+roughness length, respectively.
+
+```r
+input_maps = taruwind_site_layers(
+  lon = site$lon, lat = site$lat, roughness = "worldcover",
+  domain_m = 990, resolution = 90,
+  cache_dir = file.path(cache, "dem")
+)
+names(input_maps)
+taruwind_plot_map(input_maps, layer = c("elevation_m", "roughness_m"))
+```
+
+Now extend the example from one target to a **3 × 3 output grid** around it.
+`map_resolution = 500` is the output-cell spacing; `resolution = 90` remains
+the terrain calculation spacing. The requested 990 m square rounds to an
+actual 1,500 m square so the centre itself is an output cell. Every output
+cell has its own local terrain response. The nine cells therefore require
+more work than the original point call, even though the ERA5 input hours and
+the source files are cached.
+
+```r
+area = taruwind_downscale_area(
+  lon = site$lon, lat = site$lat,
+  start = start_utc, end = end_utc,
+  roughness = "worldcover",
+  area_m = 990, map_resolution = 500,
+  domain_m = 990, resolution = 90, workers = 1,
+  cache_dir = cache
+)
+names(area$maps)
+area$grid$actual_area_m
+taruwind_plot_map(area$maps, layer = "taruwind_20200101T000000Z")
+taruwind_plot_map(area$maps, layer = "bilinear_20200101T000000Z")
+saveRDS(area, file.path(output_dir, "three-by-three-area.rds"))
+```
+
+`area$wind` contains the underlying site-hour tibble and `area$maps` contains
+one TaruWind and one vector-bilinear ERA5 raster per hour. Inspect
+`area$grid$sites` for the exact output coordinates. The map is a grid of
+independently computed point estimates, not a single shared-domain flow solve.
+The 990 m terrain domains and nine coarse map cells demonstrate the software;
+use an appropriate terrain domain and output spacing for an analysis. The
+function defaults to at most 25 output cells and permits at most 100 by
+explicitly raising `max_cells`; work scales with the number of cells.
+
+You can export a raster with `terra::writeRaster(area$maps[[1]], filename)`.
+To save a PNG directly, supply a new filename to `taruwind_plot_map(...,
+file = "my-map.png")`; it will not overwrite an existing image.
+
+## Beyond the tutorial: enlarge this analysis deliberately
+
+Before interpreting this site scientifically, build a response with the normal
+domain. The following continuation uses our same site, dates and cache, but
+**constructs a new 30 km response** rather than reusing the 990 m software test.
+It is optional and can take substantially longer than the preceding steps.
+
+```r
+# Optional next step; not needed to finish the quick first-use example.
+# analysis = taruwind_downscale(
+#   sites = site, start = start_utc, end = end_utc,
+#   roughness = "worldcover", domain_m = 30000, resolution = 90,
+#   workers = 1, cache_dir = cache
+# )
+# saveRDS(analysis, file.path(output_dir, "normal-domain-result.rds"))
+```
+
+### Multiple sites, local time and 100 m winds
+
+Now suppose we also want a second location 0.02 degrees northeast of our first
+site. Keep the original identifier and add the second coordinate. This optional
+example keeps the same short period and small software-test domain:
+
+```r
+sites = rbind(site, data.frame(site_id = "istanbul_neighbour",
+                              lon = site$lon + 0.02, lat = site$lat + 0.02))
 network = taruwind_downscale(
-  sites = sites, period = c("2020-01-01", "2020-01-01"),
+  sites = sites, start = start_utc, end = end_utc,
+  domain_m = 990, resolution = 90,
   roughness = "worldcover", workers = "auto", local_tz = TRUE,
   cache_dir = cache
 )
+network[, c("site_id", "timestamp_utc", "wind_speed", "taruwind_speed")]
+saveRDS(network, file.path(output_dir, "two-site-result.rds"))
 ```
 
-This example uses the default **30 km** domains. A matrix with named `lon` and
+Expect six rows: two sites times three hours. This constructs responses for
+both targets; it does not implicitly reuse the earlier `responses` object.
+For normal analysis use 30 km domains as above. A matrix with named `lon` and
 `lat` columns is also accepted. Keep `site_id` values unchanged when reusing
 responses.
 
@@ -239,26 +397,11 @@ are retrieved, rather than extrapolating from 10 m. Do not reuse a 10 m response
 at 100 m. Numerical support does not imply observational validation at 100 m
 in the accompanying study.
 
-## 7. Optional advanced workflows — skip on your first run
+## Reference: supplying your own inputs
 
 **The first-use workflow is already complete.** `taruwind_downscale()` handles
 the source profile internally. Do not run a separate profile or raster setup
 unless you want to inspect inputs or supply your own data.
-
-### Inspect the automatically acquired source profile
-
-This optional example uses the same cache as Section 3. No local NetCDF file
-is required; an existing cached profile is reused, otherwise CDS is queried.
-
-```r
-profile = taruwind_source_profile(
-  lon = 29.02, lat = 41.02,
-  cache_dir = file.path(cache, "source_profile"),
-  quiet = FALSE
-)
-profile$source_z0
-profile$depth
-```
 
 ### Supply existing files (template only, not a runnable tutorial)
 
@@ -293,7 +436,7 @@ rows run south to north and columns west to east. Converting a terra raster
 directly to a matrix may reverse the required row order. The geographic
 interface handles this orientation.
 
-## 8. Assumptions, runtime and limits
+## Reference: assumptions, runtime and limits
 
 - The model is a neutral diagnostic approach. Turbulence, thermal circulations
   and canopy displacement are not explicitly resolved.
@@ -324,7 +467,7 @@ Reflected solves are limited to 2 million computational cells per site.
 `allow_large` belongs to the separate ERA5 download helper, not the main
 `taruwind_downscale()` function. Split larger requests into batches.
 
-## 9. Troubleshooting
+## Reference: troubleshooting
 
 | Problem | First check |
 |---|---|
@@ -337,8 +480,9 @@ Reflected solves are limited to 2 million computational cells per site.
 | Slow initial preparation | Check terrain complexity and domain size; separate download time |
 | NA output | Check input u/v for missing values |
 
-This version produces point wind-speed time series, not national atlases,
-interactive maps, downscaled direction/u/v or CERRA downloads. Linux, Windows
+This version produces point wind-speed time series and bounded local raster
+maps, not national atlases, interactive maps, downscaled direction/u/v or
+CERRA downloads. Linux, Windows
 and macOS package checks passed in GitHub Actions run 35756209012 on
 22 September 2026. Live data integration was additionally checked on Linux;
 the platform checks do not download environmental datasets.

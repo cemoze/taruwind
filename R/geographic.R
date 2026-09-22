@@ -32,7 +32,8 @@ taruwind_prepare_site <- function(lon, lat, roughness, depth, source_z0,
 
 .taruwind_site_inputs <- function(lon, lat, roughness, depth, source_z0,
     dem=NULL, resolution=90, domain_m=30000, height=10,
-    cache_dir=file.path(file.path(tempdir(), "taruwind-cache"), "dem"), quiet=TRUE) {
+    cache_dir=file.path(file.path(tempdir(), "taruwind-cache"), "dem"), quiet=TRUE,
+    return_layers=FALSE) {
   .taruwind_require("terra", "geographic preparation")
   target <- .taruwind_sites(lon=lon,lat=lat)
   if(nrow(target)!=1L || abs(lat)>85) stop("One target between 85 S and 85 N required")
@@ -87,7 +88,30 @@ taruwind_prepare_site <- function(lon, lat, roughness, depth, source_z0,
     actual_domain_m=n*resolution,dem_resampling="bilinear",roughness_resampling="nearest",
     wind_frame="east/north at target",roughness_source=if(automatic_roughness)
       attr(z,"taruwind_roughness_provenance") else "caller supplied")
-  list(arguments=arguments,geographic=geographic)
+  if(return_layers) {
+    names(h) <- "elevation_m"
+    names(z) <- "roughness_m"
+  }
+  list(arguments=arguments,geographic=geographic,
+    layers=if(return_layers) c(h,z) else NULL)
+}
+
+#' Retrieve the terrain layers used for one geographic site
+#'
+#' Returns the GLO-90 elevation and aerodynamic roughness after alignment to
+#' the same target-centred metric grid used by [taruwind_prepare_site()]. The
+#' layers can be plotted with [taruwind_plot_map()]. No wind is downloaded or
+#' response constructed. WorldCover roughness is a land-cover lookup, not a
+#' measured roughness map.
+#' @inheritParams taruwind_prepare_site
+#' @return A two-layer `terra::SpatRaster` named `elevation_m` and `roughness_m`.
+#' @export
+taruwind_site_layers <- function(lon,lat,roughness="worldcover",dem=NULL,
+    resolution=90,domain_m=30000,
+    cache_dir=file.path(file.path(tempdir(),"taruwind-cache"),"dem"),quiet=TRUE) {
+  .taruwind_site_inputs(lon,lat,roughness,depth=NULL,source_z0=NULL,
+    dem=dem,resolution=resolution,domain_m=domain_m,height=10,
+    cache_dir=cache_dir,quiet=quiet,return_layers=TRUE)$layers
 }
 
 #' Download ERA5 and downscale geographic target time series
