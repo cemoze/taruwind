@@ -265,9 +265,18 @@ it</a></li>
 <li><a href="#multiple-sites-local-time-and-100-m-winds"
 id="toc-multiple-sites-local-time-and-100-m-winds">6. Multiple sites,
 local time and 100 m winds</a></li>
-<li><a href="#use-your-own-rasters-or-wind-components"
-id="toc-use-your-own-rasters-or-wind-components">7. Use your own rasters
-or wind components</a></li>
+<li><a href="#optional-advanced-workflows-skip-on-your-first-run"
+id="toc-optional-advanced-workflows-skip-on-your-first-run">7. Optional
+advanced workflows — skip on your first run</a>
+<ul>
+<li><a href="#inspect-the-automatically-acquired-source-profile"
+id="toc-inspect-the-automatically-acquired-source-profile">Inspect the
+automatically acquired source profile</a></li>
+<li><a
+href="#supply-existing-files-template-only-not-a-runnable-tutorial"
+id="toc-supply-existing-files-template-only-not-a-runnable-tutorial">Supply
+existing files (template only, not a runnable tutorial)</a></li>
+</ul></li>
 <li><a href="#assumptions-runtime-and-limits"
 id="toc-assumptions-runtime-and-limits">8. Assumptions, runtime and
 limits</a></li>
@@ -283,6 +292,10 @@ the current solver. No target observations are required.</p>
 <p>Recommended order: <strong>offline check → one coordinate → inspect
 results → save the response → expand the domain, period and number of
 sites.</strong></p>
+<p><strong>For your first run, follow Sections 1–5.</strong> Section 6
+is an optional, larger example. Section 7 is an advanced alternative,
+not another required setup step. You do not need to obtain or create any
+<code>my-*.nc</code> or <code>my-*.tif</code> files.</p>
 <h2 id="check-your-installation-without-downloading-data">1. Check your
 installation without downloading data</h2>
 <p>In RStudio, select <strong>Session → Restart R</strong>
@@ -537,20 +550,41 @@ period is still interpreted in UTC</strong>, not local time.</p>
 Native ERA5 u100/v100 are retrieved, rather than extrapolating from 10
 m. Do not reuse a 10 m response at 100 m. Numerical support does not
 imply observational validation at 100 m in the accompanying study.</p>
-<h2 id="use-your-own-rasters-or-wind-components">7. Use your own rasters
-or wind components</h2>
-<p>With georeferenced DEM and <strong>aerodynamic z₀ in metres</strong>
-rasters:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Replace these placeholder paths with actual files; this example is offline.</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>profile <span class="ot">=</span> <span class="fu">taruwind_source_profile</span>(</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">lon =</span> <span class="fl">29.02</span>, <span class="at">lat =</span> <span class="fl">41.02</span>, <span class="at">fsr_file =</span> <span class="st">&quot;my-era5-fsr.nc&quot;</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>op <span class="ot">=</span> <span class="fu">taruwind_prepare_site</span>(</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">lon =</span> <span class="fl">29.02</span>, <span class="at">lat =</span> <span class="fl">41.02</span>,</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">dem =</span> <span class="st">&quot;my-dem.tif&quot;</span>, <span class="at">roughness =</span> <span class="st">&quot;my-aerodynamic-roughness.tif&quot;</span>,</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">depth =</span> profile<span class="sc">$</span>depth, <span class="at">source_z0 =</span> profile<span class="sc">$</span>source_z0</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_predict</span>(op, <span class="at">u =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">4</span>), <span class="at">v =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span></code></pre></div>
+<h2 id="optional-advanced-workflows-skip-on-your-first-run">7. Optional
+advanced workflows — skip on your first run</h2>
+<p><strong>The first-use workflow is already complete.</strong>
+<code>taruwind_downscale()</code> handles the source profile internally.
+Do not run a separate profile or raster setup unless you want to inspect
+inputs or supply your own data.</p>
+<h3 id="inspect-the-automatically-acquired-source-profile">Inspect the
+automatically acquired source profile</h3>
+<p>This optional example uses the same cache as Section 3. No local
+NetCDF file is required; an existing cached profile is reused, otherwise
+CDS is queried.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>profile <span class="ot">=</span> <span class="fu">taruwind_source_profile</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">lon =</span> <span class="fl">29.02</span>, <span class="at">lat =</span> <span class="fl">41.02</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">cache_dir =</span> <span class="fu">file.path</span>(cache, <span class="st">&quot;source_profile&quot;</span>),</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">quiet =</span> <span class="cn">FALSE</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>profile<span class="sc">$</span>source_z0</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>profile<span class="sc">$</span>depth</span></code></pre></div>
+<h3
+id="supply-existing-files-template-only-not-a-runnable-tutorial">Supply
+existing files (template only, not a runnable tutorial)</h3>
+<p>Only use this alternative if you already have a georeferenced DEM, an
+<strong>aerodynamic z₀ raster in metres</strong>, and an ERA5 FSR NetCDF
+file. The filenames below are placeholders, not files bundled with
+TaruWind. All lines are commented out intentionally: replace the paths
+with real files before uncommenting them.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># profile = taruwind_source_profile(</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   lon = 29.02, lat = 41.02, fsr_file = &quot;my-era5-fsr.nc&quot;</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># )</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co"># op = taruwind_prepare_site(</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   lon = 29.02, lat = 41.02,</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   dem = &quot;my-dem.tif&quot;, roughness = &quot;my-aerodynamic-roughness.tif&quot;,</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="co">#   depth = profile$depth, source_z0 = profile$source_z0</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co"># )</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co"># taruwind_predict(op, u = c(3, 4), v = c(1, 2))</span></span></code></pre></div>
 <p>These example u/v values represent components already interpolated to
 the target. You can apply your own component series while retaining the
 same geometric inputs. See <code>?taruwind_predict</code> for four-node
@@ -587,10 +621,10 @@ maximum of 16, further limited by the number of sites and memory guards.
 parts.</strong> Data preparation is sequential; independent numerical
 solves run in parallel.</li>
 </ul>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(wind, <span class="st">&quot;responses&quot;</span>)[[<span class="dv">1</span>]]<span class="sc">$</span>provenance</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(wind, <span class="st">&quot;forcing_provenance&quot;</span>)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_limits</span>()</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_workers</span>(<span class="at">n_sites =</span> <span class="dv">10</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(wind, <span class="st">&quot;responses&quot;</span>)[[<span class="dv">1</span>]]<span class="sc">$</span>provenance</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(wind, <span class="st">&quot;forcing_provenance&quot;</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_limits</span>()</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_workers</span>(<span class="at">n_sites =</span> <span class="dv">10</span>)</span></code></pre></div>
 <p>The automatic point workflow allows up to 100 sites and 10 million
 site-hours. Reflected solves are limited to 2 million computational
 cells per site. <code>allow_large</code> belongs to the separate ERA5
@@ -653,11 +687,11 @@ Linux, Windows and macOS package checks passed in GitHub Actions run
 35756209012 on 22 September 2026. Live data integration was additionally
 checked on Linux; the platform checks do not download environmental
 datasets.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>?taruwind_downscale</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>?taruwind_prepare_site</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>?taruwind_predict</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="fu">help</span>(<span class="at">package =</span> <span class="st">&quot;taruwind&quot;</span>)</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">browseURL</span>(<span class="fu">system.file</span>(<span class="st">&quot;doc&quot;</span>, <span class="st">&quot;getting-started.html&quot;</span>, <span class="at">package =</span> <span class="st">&quot;taruwind&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>?taruwind_downscale</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>?taruwind_prepare_site</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>?taruwind_predict</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="fu">help</span>(<span class="at">package =</span> <span class="st">&quot;taruwind&quot;</span>)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">browseURL</span>(<span class="fu">system.file</span>(<span class="st">&quot;doc&quot;</span>, <span class="st">&quot;getting-started.html&quot;</span>, <span class="at">package =</span> <span class="st">&quot;taruwind&quot;</span>))</span></code></pre></div>
 <p>In short: <strong>start with one site, understand the output, save
 the response, then scale up.</strong></p>
 </body>

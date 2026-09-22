@@ -12,6 +12,10 @@ raster preparation and the current solver. No target observations are required.
 Recommended order: **offline check → one coordinate → inspect results → save
 the response → expand the domain, period and number of sites.**
 
+**For your first run, follow Sections 1–5.** Section 6 is an optional, larger
+example. Section 7 is an advanced alternative, not another required setup step.
+You do not need to obtain or create any `my-*.nc` or `my-*.tif` files.
+
 ## 1. Check your installation without downloading data
 
 In RStudio, select **Session → Restart R** (`Ctrl+Shift+F10`), then run:
@@ -235,21 +239,44 @@ are retrieved, rather than extrapolating from 10 m. Do not reuse a 10 m response
 at 100 m. Numerical support does not imply observational validation at 100 m
 in the accompanying study.
 
-## 7. Use your own rasters or wind components
+## 7. Optional advanced workflows — skip on your first run
 
-With georeferenced DEM and **aerodynamic z₀ in metres** rasters:
+**The first-use workflow is already complete.** `taruwind_downscale()` handles
+the source profile internally. Do not run a separate profile or raster setup
+unless you want to inspect inputs or supply your own data.
+
+### Inspect the automatically acquired source profile
+
+This optional example uses the same cache as Section 3. No local NetCDF file
+is required; an existing cached profile is reused, otherwise CDS is queried.
 
 ```r
-# Replace these placeholder paths with actual files; this example is offline.
 profile = taruwind_source_profile(
-  lon = 29.02, lat = 41.02, fsr_file = "my-era5-fsr.nc"
-)
-op = taruwind_prepare_site(
   lon = 29.02, lat = 41.02,
-  dem = "my-dem.tif", roughness = "my-aerodynamic-roughness.tif",
-  depth = profile$depth, source_z0 = profile$source_z0
+  cache_dir = file.path(cache, "source_profile"),
+  quiet = FALSE
 )
-taruwind_predict(op, u = c(3, 4), v = c(1, 2))
+profile$source_z0
+profile$depth
+```
+
+### Supply existing files (template only, not a runnable tutorial)
+
+Only use this alternative if you already have a georeferenced DEM, an
+**aerodynamic z₀ raster in metres**, and an ERA5 FSR NetCDF file. The filenames
+below are placeholders, not files bundled with TaruWind. All lines are commented
+out intentionally: replace the paths with real files before uncommenting them.
+
+```r
+# profile = taruwind_source_profile(
+#   lon = 29.02, lat = 41.02, fsr_file = "my-era5-fsr.nc"
+# )
+# op = taruwind_prepare_site(
+#   lon = 29.02, lat = 41.02,
+#   dem = "my-dem.tif", roughness = "my-aerodynamic-roughness.tif",
+#   depth = profile$depth, source_z0 = profile$source_z0
+# )
+# taruwind_predict(op, u = c(3, 4), v = c(1, 2))
 ```
 
 These example u/v values represent components already interpolated to the
