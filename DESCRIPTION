@@ -1,0 +1,23 @@
+Package: taruwind
+Type: Package
+Title: Reduced-Mode Terrain and Surface Wind Downscaling
+Version: 0.1.0
+Authors@R: person("Cem", "Özen", role = c("aut", "cre"), email = "ozenc@itu.edu.tr")
+Description: Constructs reusable local wind responses using a neutral
+    terrain-following reduced-vertical-mode adjustment and exact raster-ray
+    integration of finite-fetch surface memory. Explicit metric-grid inputs
+    separate terrain, target aerodynamic roughness and the effective source
+    profile. Prepared responses can be applied to wind-component time series
+    without target-site wind calibration. This diagnostic approximation does
+    not resolve turbulence or guarantee conservation of the final field.
+License: MIT + file LICENSE
+Copyright: See inst/COPYRIGHTS for bundled third-party components.
+Encoding: UTF-8
+Depends: R (>= 4.2.0)
+Imports: Rcpp, tibble, curl, jsonlite, parallel
+LinkingTo: Rcpp
+Suggests: testthat (>= 3.0.0), terra, Rarr, lutz, ncdf4
+Config/testthat/edition: 3
+SystemRequirements: C++17
+NeedsCompilation: yes
+Config/roxygen2/version: 8.1.0

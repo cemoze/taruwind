@@ -1,0 +1,12 @@
+*.o
+*.so
+*.dll
+*.dylib
+.Rhistory
+.RData
+.Rproj.user/
+*.tar.gz
+*.Rcheck/
+.cdsapirc
+.Renviron
+cache/

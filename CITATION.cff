@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "Please cite TaruWind and the associated paper when published."
+title: "TaruWind: reduced-mode terrain and surface wind downscaling"
+type: software
+authors:
+  - family-names: Özen
+    given-names: Cem
+    email: ozenc@itu.edu.tr
+version: 0.1.0
+license: MIT
