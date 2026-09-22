@@ -3,6 +3,7 @@
 S3method(print,taruwind_era5)
 export(taruwind_build)
 export(taruwind_build_many)
+export(taruwind_cache_info)
 export(taruwind_download_copernicus_dem)
 export(taruwind_download_era5)
 export(taruwind_download_worldcover)

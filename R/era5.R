@@ -74,13 +74,20 @@ taruwind_download_era5 <- function(
   metadata_refresh <- refresh == "always" ||
     (refresh == "auto" && metadata_age >= 24)
   if (!file.exists(metadata_file) || metadata_refresh) {
+    old_time = if (file.exists(metadata_file)) tryCatch(
+      jsonlite::fromJSON(metadata_file, simplifyVector = FALSE)$metadata[["time/.zarray"]],
+      error = function(e) NULL) else NULL
+    if (!quiet) message("ERA5: refreshing Zarr metadata (not wind fields).")
     .taruwind_fetch(
       paste0(store, "/.zmetadata"), metadata_file, key, quiet,
       overwrite = file.exists(metadata_file)
     )
     # The last time-coordinate chunk grows as ERA5/ERA5T is extended.
-    if (dir.exists(file.path(cache, "time"))) {
-      unlink(list.files(file.path(cache, "time"), pattern = "^[0-9]+$", full.names = TRUE))
+    if (!is.null(old_time)) {
+      # Only the old final coordinate chunk can grow. Completed historical
+      # chunks remain reusable; do not discard the entire time axis daily.
+      last = ceiling(unlist(old_time$shape)[1] / unlist(old_time$chunks)[1]) - 1L
+      unlink(file.path(cache, "time", as.character(last)))
     }
   }
   metadata <- jsonlite::fromJSON(metadata_file, simplifyVector = FALSE)$metadata
@@ -91,6 +98,10 @@ taruwind_download_era5 <- function(
   coordinates <- lapply(c("time", "latitude", "longitude"), function(variable) {
     info <- metadata[[paste0(variable, "/.zarray")]]
     chunk_count <- ceiling(unlist(info$shape) / unlist(info$chunks))
+    ids = as.character(seq_len(chunk_count[1]) - 1L)
+    missing = sum(!file.exists(file.path(cache, variable, ids)))
+    if (!quiet) message(sprintf("ERA5 %s coordinates: %d cached, %d to download.",
+      variable, length(ids) - missing, missing))
     for (chunk in seq_len(chunk_count[1]) - 1L) {
       .taruwind_fetch_chunk(store, cache, variable, as.character(chunk), key, quiet)
     }
@@ -125,8 +136,15 @@ taruwind_download_era5 <- function(
         floor((bracket$lon_index - 1L) / chunks[3])
       )
     })))
+    if (!quiet) message(sprintf(
+      "ERA5 %s: %d required wind chunk(s); stored chunk shape %s. Requested hours: %d.",
+      variable, nrow(required), paste(chunks, collapse = " x "), length(time_index)))
     for (row in seq_len(nrow(required))) {
       chunk <- paste(required[row, ], collapse = ".")
+      cached = file.exists(file.path(cache, variable, chunk)) &&
+        !(metadata_refresh && recent_request)
+      if (!quiet) message(sprintf("  %s chunk %d/%d: %s", variable, row,
+        nrow(required), if (cached) "using cache" else "downloading"))
       .taruwind_fetch_chunk(
         store, cache, variable, chunk, key, quiet,
         overwrite = metadata_refresh && recent_request
@@ -320,7 +338,7 @@ print.taruwind_era5 <- function(x, ...) {
   handle <- curl::new_handle(failonerror = TRUE, connecttimeout = 30L)
   curl::handle_setheaders(handle, Authorization = paste("Bearer", key))
   tryCatch(
-    curl::curl_download(url, temporary, quiet = quiet, handle = handle),
+    curl::curl_download(url, temporary, quiet = TRUE, handle = handle),
     error = function(error) {
       if (file.exists(temporary)) unlink(temporary)
       stop("CDS ARCO download failed: ", conditionMessage(error), call. = FALSE)

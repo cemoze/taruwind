@@ -14,7 +14,8 @@ taruwind_prepare_site(
   resolution = 90,
   domain_m = 30000,
   height = 10,
-  cache_dir = file.path(file.path(tempdir(), "taruwind-cache"), "dem")
+  cache_dir = file.path(file.path(tempdir(), "taruwind-cache"), "dem"),
+  quiet = TRUE
 )
 }
 \arguments{
@@ -38,6 +39,8 @@ an odd number of cells with the target at the central cell centre.}
 \item{height}{Evaluation height, 10 or 100 metres.}
 
 \item{cache_dir}{Directory for downloaded DEM tiles.}
+
+\item{quiet}{Suppress preparation messages.}
 }
 \value{
 A prepared response usable with [taruwind_predict()], with geographic

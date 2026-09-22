@@ -124,6 +124,39 @@ is not a universal guarantee of adequacy for every landscape.
 
 ## 4. Understand and plot the output
 
+### Progress and downloaded files
+
+The console reports five stages: source profile, terrain/roughness preparation,
+response construction, ERA5 acquisition and response application. These are
+stage counters, not percentages of elapsed time. Use `quiet = TRUE` in
+`taruwind_downscale()` to suppress these messages. Warnings and errors remain.
+
+ERA5 winds are read from Zarr, not downloaded as GRIB. The messages distinguish
+coordinate arrays from wind chunks and report cache reuse. A stored wind chunk
+can cover many more hours than requested; only the requested hours enter the
+output. `Rarr` reads these compressed arrays; `BiocManager` is only its installer.
+Neither is needed when applying the solver to your own wind components.
+
+Inspect the example cache without deleting anything:
+
+```r
+cache_info = taruwind_cache_info(cache)
+cache_info
+attr(cache_info, "total_bytes") / 1e6  # Total size in MB
+attr(cache_info, "cache_dir")
+```
+
+An explicit persistent cache is retained after the call and after R restarts.
+The default session-temporary cache is normally removed when R closes, not
+when the function returns. The package does not automatically evict persistent
+files. Reusing cached data does not itself reuse the terrain solve; save and
+pass `responses` as shown below to avoid reconstructing that response.
+
+DEM acquisition currently caches complete GLO-90 tiles. WorldCover acquisition
+reads raster windows. A short wind period does not reduce these static inputs.
+
+### Output columns
+
 | Column | Meaning |
 |---|---|
 | `site_id`, `lon`, `lat` | Target identifier and coordinates |

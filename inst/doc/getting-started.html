@@ -251,7 +251,14 @@ id="toc-your-first-coordinate-a-three-hour-smoke-test">3. Your first
 coordinate: a three-hour smoke test</a></li>
 <li><a href="#understand-and-plot-the-output"
 id="toc-understand-and-plot-the-output">4. Understand and plot the
-output</a></li>
+output</a>
+<ul>
+<li><a href="#progress-and-downloaded-files"
+id="toc-progress-and-downloaded-files">Progress and downloaded
+files</a></li>
+<li><a href="#output-columns" id="toc-output-columns">Output
+columns</a></li>
+</ul></li>
 <li><a href="#save-the-response-and-reuse-it"
 id="toc-save-the-response-and-reuse-it">5. Save the response and reuse
 it</a></li>
@@ -406,6 +413,35 @@ solve.</strong> A 30 km domain is not a universal guarantee of adequacy
 for every landscape.</p>
 <h2 id="understand-and-plot-the-output">4. Understand and plot the
 output</h2>
+<h3 id="progress-and-downloaded-files">Progress and downloaded
+files</h3>
+<p>The console reports five stages: source profile, terrain/roughness
+preparation, response construction, ERA5 acquisition and response
+application. These are stage counters, not percentages of elapsed time.
+Use <code>quiet = TRUE</code> in <code>taruwind_downscale()</code> to
+suppress these messages. Warnings and errors remain.</p>
+<p>ERA5 winds are read from Zarr, not downloaded as GRIB. The messages
+distinguish coordinate arrays from wind chunks and report cache reuse. A
+stored wind chunk can cover many more hours than requested; only the
+requested hours enter the output. <code>Rarr</code> reads these
+compressed arrays; <code>BiocManager</code> is only its installer.
+Neither is needed when applying the solver to your own wind
+components.</p>
+<p>Inspect the example cache without deleting anything:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>cache_info <span class="ot">=</span> <span class="fu">taruwind_cache_info</span>(cache)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>cache_info</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(cache_info, <span class="st">&quot;total_bytes&quot;</span>) <span class="sc">/</span> <span class="fl">1e6</span>  <span class="co"># Total size in MB</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(cache_info, <span class="st">&quot;cache_dir&quot;</span>)</span></code></pre></div>
+<p>An explicit persistent cache is retained after the call and after R
+restarts. The default session-temporary cache is normally removed when R
+closes, not when the function returns. The package does not
+automatically evict persistent files. Reusing cached data does not
+itself reuse the terrain solve; save and pass <code>responses</code> as
+shown below to avoid reconstructing that response.</p>
+<p>DEM acquisition currently caches complete GLO-90 tiles. WorldCover
+acquisition reads raster windows. A short wind period does not reduce
+these static inputs.</p>
+<h3 id="output-columns">Output columns</h3>
 <table>
 <colgroup>
 <col style="width: 50%" />
@@ -449,27 +485,27 @@ bilinear interpolation</td>
 <code>u100</code>/<code>v100</code> columns are also
 <strong>input</strong> components, not downscaled output components.
 This version returns speed as its final product.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>wind<span class="sc">$</span>increment <span class="ot">=</span> wind<span class="sc">$</span>taruwind_speed <span class="sc">-</span> wind<span class="sc">$</span>wind_speed</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(wind<span class="sc">$</span>timestamp_utc, wind<span class="sc">$</span>wind_speed, <span class="at">type =</span> <span class="st">&quot;l&quot;</span>, <span class="at">col =</span> <span class="st">&quot;#0072B2&quot;</span>,</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">&quot;UTC&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;Wind speed (m/s)&quot;</span>,</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylim =</span> <span class="fu">range</span>(<span class="fu">c</span>(wind<span class="sc">$</span>wind_speed, wind<span class="sc">$</span>taruwind_speed), <span class="at">finite =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(wind<span class="sc">$</span>timestamp_utc, wind<span class="sc">$</span>taruwind_speed, <span class="at">col =</span> <span class="st">&quot;#D55E00&quot;</span>)</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">&quot;topright&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;ERA5 Bilinear&quot;</span>, <span class="st">&quot;TaruWind&quot;</span>),</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> <span class="fu">c</span>(<span class="st">&quot;#0072B2&quot;</span>, <span class="st">&quot;#D55E00&quot;</span>), <span class="at">lty =</span> <span class="dv">1</span>, <span class="at">bty =</span> <span class="st">&quot;n&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>wind<span class="sc">$</span>increment <span class="ot">=</span> wind<span class="sc">$</span>taruwind_speed <span class="sc">-</span> wind<span class="sc">$</span>wind_speed</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(wind<span class="sc">$</span>timestamp_utc, wind<span class="sc">$</span>wind_speed, <span class="at">type =</span> <span class="st">&quot;l&quot;</span>, <span class="at">col =</span> <span class="st">&quot;#0072B2&quot;</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">&quot;UTC&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;Wind speed (m/s)&quot;</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylim =</span> <span class="fu">range</span>(<span class="fu">c</span>(wind<span class="sc">$</span>wind_speed, wind<span class="sc">$</span>taruwind_speed), <span class="at">finite =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(wind<span class="sc">$</span>timestamp_utc, wind<span class="sc">$</span>taruwind_speed, <span class="at">col =</span> <span class="st">&quot;#D55E00&quot;</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">&quot;topright&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;ERA5 Bilinear&quot;</span>, <span class="st">&quot;TaruWind&quot;</span>),</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> <span class="fu">c</span>(<span class="st">&quot;#0072B2&quot;</span>, <span class="st">&quot;#D55E00&quot;</span>), <span class="at">lty =</span> <span class="dv">1</span>, <span class="at">bty =</span> <span class="st">&quot;n&quot;</span>)</span></code></pre></div>
 <p>A difference between models is not itself an accuracy gain.
 Independent observations are needed to assess accuracy.</p>
 <h2 id="save-the-response-and-reuse-it">5. Save the response and reuse
 it</h2>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>responses <span class="ot">=</span> <span class="fu">attr</span>(wind, <span class="st">&quot;responses&quot;</span>)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(responses, <span class="st">&quot;taruwind-responses.rds&quot;</span>)</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(wind, <span class="st">&quot;taruwind-first-result.rds&quot;</span>)</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(<span class="fu">as.data.frame</span>(wind), <span class="st">&quot;taruwind-first-result.csv&quot;</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>later <span class="ot">=</span> <span class="fu">taruwind_downscale</span>(</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">lon =</span> <span class="fl">29.02</span>, <span class="at">lat =</span> <span class="fl">41.02</span>,</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">period =</span> <span class="fu">c</span>(<span class="st">&quot;2020-01-02&quot;</span>, <span class="st">&quot;2020-01-02&quot;</span>),</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">responses =</span> responses, <span class="at">cache_dir =</span> cache</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>responses <span class="ot">=</span> <span class="fu">attr</span>(wind, <span class="st">&quot;responses&quot;</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(responses, <span class="st">&quot;taruwind-responses.rds&quot;</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(wind, <span class="st">&quot;taruwind-first-result.rds&quot;</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(<span class="fu">as.data.frame</span>(wind), <span class="st">&quot;taruwind-first-result.csv&quot;</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>later <span class="ot">=</span> <span class="fu">taruwind_downscale</span>(</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">lon =</span> <span class="fl">29.02</span>, <span class="at">lat =</span> <span class="fl">41.02</span>,</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">period =</span> <span class="fu">c</span>(<span class="st">&quot;2020-01-02&quot;</span>, <span class="st">&quot;2020-01-02&quot;</span>),</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">responses =</span> responses, <span class="at">cache_dir =</span> cache</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <p>Identical start/end dates select all 24 hours of that UTC day;
 endpoints are inclusive. This reused response still belongs to the
 <strong>990 m test domain</strong>. Reusing it does not enlarge the
@@ -483,13 +519,13 @@ alongside <code>responses</code> does not update the saved response.</p>
 <h2 id="multiple-sites-local-time-and-100-m-winds">6. Multiple sites,
 local time and 100 m winds</h2>
 <p>After the single-site example works:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>sites <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">site_id =</span> <span class="fu">c</span>(<span class="st">&quot;site_a&quot;</span>, <span class="st">&quot;site_b&quot;</span>),</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">lon =</span> <span class="fu">c</span>(<span class="fl">29.02</span>, <span class="fl">29.04</span>), <span class="at">lat =</span> <span class="fu">c</span>(<span class="fl">41.02</span>, <span class="fl">41.04</span>))</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>network <span class="ot">=</span> <span class="fu">taruwind_downscale</span>(</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">sites =</span> sites, <span class="at">period =</span> <span class="fu">c</span>(<span class="st">&quot;2020-01-01&quot;</span>, <span class="st">&quot;2020-01-01&quot;</span>),</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">roughness =</span> <span class="st">&quot;worldcover&quot;</span>, <span class="at">workers =</span> <span class="st">&quot;auto&quot;</span>, <span class="at">local_tz =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">cache_dir =</span> cache</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>sites <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">site_id =</span> <span class="fu">c</span>(<span class="st">&quot;site_a&quot;</span>, <span class="st">&quot;site_b&quot;</span>),</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">lon =</span> <span class="fu">c</span>(<span class="fl">29.02</span>, <span class="fl">29.04</span>), <span class="at">lat =</span> <span class="fu">c</span>(<span class="fl">41.02</span>, <span class="fl">41.04</span>))</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>network <span class="ot">=</span> <span class="fu">taruwind_downscale</span>(</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">sites =</span> sites, <span class="at">period =</span> <span class="fu">c</span>(<span class="st">&quot;2020-01-01&quot;</span>, <span class="st">&quot;2020-01-01&quot;</span>),</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">roughness =</span> <span class="st">&quot;worldcover&quot;</span>, <span class="at">workers =</span> <span class="st">&quot;auto&quot;</span>, <span class="at">local_tz =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">cache_dir =</span> cache</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <p>This example uses the default <strong>30 km</strong> domains. A
 matrix with named <code>lon</code> and <code>lat</code> columns is also
 accepted. Keep <code>site_id</code> values unchanged when reusing
@@ -505,16 +541,16 @@ imply observational validation at 100 m in the accompanying study.</p>
 or wind components</h2>
 <p>With georeferenced DEM and <strong>aerodynamic z₀ in metres</strong>
 rasters:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Replace these placeholder paths with actual files; this example is offline.</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>profile <span class="ot">=</span> <span class="fu">taruwind_source_profile</span>(</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">lon =</span> <span class="fl">29.02</span>, <span class="at">lat =</span> <span class="fl">41.02</span>, <span class="at">fsr_file =</span> <span class="st">&quot;my-era5-fsr.nc&quot;</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>op <span class="ot">=</span> <span class="fu">taruwind_prepare_site</span>(</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">lon =</span> <span class="fl">29.02</span>, <span class="at">lat =</span> <span class="fl">41.02</span>,</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">dem =</span> <span class="st">&quot;my-dem.tif&quot;</span>, <span class="at">roughness =</span> <span class="st">&quot;my-aerodynamic-roughness.tif&quot;</span>,</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">depth =</span> profile<span class="sc">$</span>depth, <span class="at">source_z0 =</span> profile<span class="sc">$</span>source_z0</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_predict</span>(op, <span class="at">u =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">4</span>), <span class="at">v =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Replace these placeholder paths with actual files; this example is offline.</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>profile <span class="ot">=</span> <span class="fu">taruwind_source_profile</span>(</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">lon =</span> <span class="fl">29.02</span>, <span class="at">lat =</span> <span class="fl">41.02</span>, <span class="at">fsr_file =</span> <span class="st">&quot;my-era5-fsr.nc&quot;</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>op <span class="ot">=</span> <span class="fu">taruwind_prepare_site</span>(</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">lon =</span> <span class="fl">29.02</span>, <span class="at">lat =</span> <span class="fl">41.02</span>,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">dem =</span> <span class="st">&quot;my-dem.tif&quot;</span>, <span class="at">roughness =</span> <span class="st">&quot;my-aerodynamic-roughness.tif&quot;</span>,</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">depth =</span> profile<span class="sc">$</span>depth, <span class="at">source_z0 =</span> profile<span class="sc">$</span>source_z0</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_predict</span>(op, <span class="at">u =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">4</span>), <span class="at">v =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span></code></pre></div>
 <p>These example u/v values represent components already interpolated to
 the target. You can apply your own component series while retaining the
 same geometric inputs. See <code>?taruwind_predict</code> for four-node
@@ -551,10 +587,10 @@ maximum of 16, further limited by the number of sites and memory guards.
 parts.</strong> Data preparation is sequential; independent numerical
 solves run in parallel.</li>
 </ul>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(wind, <span class="st">&quot;responses&quot;</span>)[[<span class="dv">1</span>]]<span class="sc">$</span>provenance</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(wind, <span class="st">&quot;forcing_provenance&quot;</span>)</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_limits</span>()</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_workers</span>(<span class="at">n_sites =</span> <span class="dv">10</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(wind, <span class="st">&quot;responses&quot;</span>)[[<span class="dv">1</span>]]<span class="sc">$</span>provenance</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(wind, <span class="st">&quot;forcing_provenance&quot;</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_limits</span>()</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_workers</span>(<span class="at">n_sites =</span> <span class="dv">10</span>)</span></code></pre></div>
 <p>The automatic point workflow allows up to 100 sites and 10 million
 site-hours. Reflected solves are limited to 2 million computational
 cells per site. <code>allow_large</code> belongs to the separate ERA5
@@ -617,11 +653,11 @@ Linux, Windows and macOS package checks passed in GitHub Actions run
 35756209012 on 22 September 2026. Live data integration was additionally
 checked on Linux; the platform checks do not download environmental
 datasets.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>?taruwind_downscale</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>?taruwind_prepare_site</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>?taruwind_predict</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">help</span>(<span class="at">package =</span> <span class="st">&quot;taruwind&quot;</span>)</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="fu">browseURL</span>(<span class="fu">system.file</span>(<span class="st">&quot;doc&quot;</span>, <span class="st">&quot;getting-started.html&quot;</span>, <span class="at">package =</span> <span class="st">&quot;taruwind&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>?taruwind_downscale</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>?taruwind_prepare_site</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>?taruwind_predict</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="fu">help</span>(<span class="at">package =</span> <span class="st">&quot;taruwind&quot;</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">browseURL</span>(<span class="fu">system.file</span>(<span class="st">&quot;doc&quot;</span>, <span class="st">&quot;getting-started.html&quot;</span>, <span class="at">package =</span> <span class="st">&quot;taruwind&quot;</span>))</span></code></pre></div>
 <p>In short: <strong>start with one site, understand the output, save
 the response, then scale up.</strong></p>
 </body>

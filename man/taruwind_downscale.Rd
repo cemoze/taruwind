@@ -24,7 +24,8 @@ taruwind_downscale(
   responses = NULL,
   workers = "auto",
   profile_year = 2021,
-  profile_wait_seconds = 60
+  profile_wait_seconds = 60,
+  quiet = FALSE
 )
 }
 \arguments{
@@ -79,6 +80,8 @@ or an integer from 1 to 16; the memory guard may reduce concurrency.}
 from the wind period. See [taruwind_source_profile()].}
 
 \item{profile_wait_seconds}{CDS queue polling limit per site/call.}
+
+\item{quiet}{Suppress download progress messages.}
 }
 \value{
 A tibble containing vector-bilinear ERA5 speed and TaruWind speed.

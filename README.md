@@ -26,6 +26,12 @@ You do not need to call all exported functions in sequence.
 | Independent metric-grid batches | `taruwind_build_many()` |
 | Inputs only, without solving | `taruwind_download_era5()`, `taruwind_download_copernicus_dem()`, `taruwind_download_worldcover()` |
 | Profile assumptions / resource policy | `taruwind_source_profile()`, `taruwind_neutral_depth()`, `taruwind_limits()`, `taruwind_workers()` |
+| Inspect cached files and total size without deleting data | `taruwind_cache_info()` |
+
+The geographic workflow reports five stages and labels cached versus downloaded
+ERA5 chunks. Set `quiet = TRUE` to suppress progress. Stage numbers do not
+estimate elapsed-time percentages. Explicit persistent caches are kept for reuse;
+the default cache is session-temporary.
 
 `wind_speed` in the geographic output is **vector-bilinear ERA5**;
 `taruwind_speed` is the final downscaled speed, both in m/s. The `u`/`v`

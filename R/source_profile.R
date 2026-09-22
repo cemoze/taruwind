@@ -35,13 +35,14 @@ taruwind_neutral_depth <- function(lat) {
 #' @param api_key CDS key; otherwise standard environment/config discovery.
 #' @param cache_dir Local request, job and NetCDF cache directory.
 #' @param wait_seconds Maximum queue polling time per call, default 60 seconds.
+#' @param quiet Suppress cache and CDS queue messages.
 #' @return A list containing raw/effective roughness, neutral depth and provenance.
 #' @references <https://cds.climate.copernicus.eu/how-to-api>
 #' @export
 taruwind_source_profile <- function(lon,lat,wind_height=10,reference_year=2021,
     fsr_file=NULL,api_key=NULL,
     cache_dir=file.path(file.path(tempdir(), "taruwind-cache"),"source_profile"),
-    wait_seconds=60) {
+    wait_seconds=60,quiet=TRUE) {
   .taruwind_require("ncdf4","ERA5 source-profile reading")
   site<-.taruwind_sites(lon=lon,lat=lat)
   if(nrow(site)!=1L || lon>=179.75 || lon< -179.75) stop("One non-antimeridian target required")
@@ -60,7 +61,9 @@ taruwind_source_profile <- function(lon,lat,wind_height=10,reference_year=2021,
     folder<-file.path(cache_dir,sprintf("fsr_%d_%+.2f_%+.2f",reference_year,west,south))
     dir.create(folder,recursive=TRUE,showWarnings=FALSE)
     fsr_file<-file.path(folder,"fsr.nc")
-    if(!file.exists(fsr_file)) .taruwind_cds_fsr(request,folder,api_key,wait_seconds)
+    if (!quiet) message("  FSR ", reference_year, ": ", if (file.exists(fsr_file))
+      "using cached NetCDF" else "requesting monthly-by-hour reference data from CDS")
+    if(!file.exists(fsr_file)) .taruwind_cds_fsr(request,folder,api_key,wait_seconds,quiet)
   }
   nc<-ncdf4::nc_open(fsr_file);on.exit(ncdf4::nc_close(nc),add=TRUE)
   if(!"fsr"%in%names(nc$var)) stop("NetCDF must contain the fsr variable")
@@ -92,7 +95,7 @@ taruwind_source_profile <- function(lon,lat,wind_height=10,reference_year=2021,
       file=normalizePath(fsr_file),md5=unname(tools::md5sum(fsr_file)),observations_used=FALSE))
 }
 
-.taruwind_cds_fsr <- function(request,folder,api_key,wait_seconds) {
+.taruwind_cds_fsr <- function(request,folder,api_key,wait_seconds,quiet=TRUE) {
   key<-.taruwind_cds_key(api_key)
   base<-"https://cds.climate.copernicus.eu/api/retrieve/v1"
   call<-function(path,body=NULL) {
@@ -112,8 +115,11 @@ taruwind_source_profile <- function(lon,lat,wind_height=10,reference_year=2021,
     jsonlite::write_json(request,file.path(folder,"request.json"),auto_unbox=TRUE,pretty=TRUE)
   }
   begin<-Sys.time()
+  previous_status = NULL
   repeat {
     s<-call(paste0("/jobs/",job$jobID))
+    if (!quiet && !identical(previous_status,s$status)) message("  CDS source-profile job: ",s$status)
+    previous_status = s$status
     if(identical(s$status,"successful")) break
     if(s$status%in%c("failed","dismissed")) stop("Cached CDS source-profile job ",s$status,"; inspect ",jf)
     if(as.numeric(difftime(Sys.time(),begin,units="secs"))>=wait_seconds)

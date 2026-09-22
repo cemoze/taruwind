@@ -12,7 +12,8 @@ taruwind_source_profile(
   fsr_file = NULL,
   api_key = NULL,
   cache_dir = file.path(file.path(tempdir(), "taruwind-cache"), "source_profile"),
-  wait_seconds = 60
+  wait_seconds = 60,
+  quiet = TRUE
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ caller's responsibility and is not inferred from `reference_year`.}
 \item{cache_dir}{Local request, job and NetCDF cache directory.}
 
 \item{wait_seconds}{Maximum queue polling time per call, default 60 seconds.}
+
+\item{quiet}{Suppress cache and CDS queue messages.}
 }
 \value{
 A list containing raw/effective roughness, neutral depth and provenance.
