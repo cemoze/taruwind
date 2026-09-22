@@ -278,9 +278,10 @@ Reflected solves are limited to 2 million computational cells per site.
 | NA output | Check input u/v for missing values |
 
 This version produces point wind-speed time series, not national atlases,
-interactive maps, downscaled direction/u/v or CERRA downloads. Windows/macOS
-CI configuration is prepared, but remote checks have not yet been completed.
-Linux and the live data workflow have been checked.
+interactive maps, downscaled direction/u/v or CERRA downloads. Linux, Windows
+and macOS package checks passed in GitHub Actions run 35756209012 on
+22 September 2026. Live data integration was additionally checked on Linux;
+the platform checks do not download environmental datasets.
 
 ```r
 ?taruwind_downscale

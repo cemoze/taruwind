@@ -39,7 +39,8 @@ solve is distinct from the much cheaper application of a prepared response.
 ## Technical overview and examples
 
 Local first-release candidate by Cem Özen (ozenc@itu.edu.tr).
-Not yet published on CRAN or GitHub.
+Prepared in the private GitHub repository `cemoze/taruwind` for cross-platform
+release checks. Not yet published on CRAN or as a public release.
 
 The current neutral reduced-mode terrain solver and finite-fetch surface
 memory are exposed through an explicit metric-grid interface. Older research
@@ -116,9 +117,10 @@ Automatic CORINE acquisition is not included in this release. The
 geographic workflow is a new input-grid convenience layer, not a byte-for-byte
 reproduction of the archived study grids. The current solver itself is unchanged.
 
-The `.github/workflows/R-CMD-check.yaml` workflow is ready for a repository
-whose root is this package. It checks Linux, Windows and macOS on GitHub;
-creating this file is not evidence that remote checks have run.
+The `.github/workflows/R-CMD-check.yaml` workflow checks Linux, Windows and
+macOS. All three completed with `Status: OK` in GitHub Actions run
+35756209012 (22 September 2026). These checks cover package installation,
+offline examples and tests, not live downloading on every platform.
 
 The model is neutral and diagnostic; separation, thermal circulations and
 canopy displacement are not explicitly resolved. The mapped source/target
