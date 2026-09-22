@@ -48,9 +48,9 @@ algorithms are not silently substituted by geographic convenience functions.
 
 ```r
 library(taruwind)
-dem <- matrix(0, 9, 11)
-roughness <- matrix(0.03, 9, 11)
-response <- taruwind_modal_prepare(
+dem = matrix(0, 9, 11)
+roughness = matrix(0.03, 9, 11)
+response = taruwind_modal_prepare(
   dem, roughness, dx = 90, x0 = 0, y0 = 0, x = 450, y = 360,
   depth = 900, source_z0 = 0.03
 )
@@ -83,13 +83,13 @@ not presented as a replacement for the study's CORINE-based inputs.
 ```r
 # Internet/CDS credentials and monthly-means dataset terms acceptance required.
 # The documented study reference profile is prepared automatically.
-wind <- taruwind_downscale(
+wind = taruwind_downscale(
   lon = 29.02, lat = 41.02,
   period = c("2020-01-01", "2020-01-02"),
   roughness = "worldcover"
 )
 # Reuse response construction for another period:
-later <- taruwind_downscale(
+later = taruwind_downscale(
   lon = 29.02, lat = 41.02,
   period = c("2020-02-01", "2020-02-02"),
   responses = attr(wind, "responses")

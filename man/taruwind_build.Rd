@@ -17,7 +17,7 @@ This is the current six-mode solver, not the retired spectral/shallow-layer
 interface. Supply the explicit metric-grid arguments documented below.
 }
 \examples{
-h <- matrix(0, 5, 5)
-op <- taruwind_build(h, h + .03, 90, 0, 0, 180, 180, 900, .03)
+h = matrix(0, 5, 5)
+op = taruwind_build(h, h + .03, 90, 0, 0, 180, 180, 900, .03)
 taruwind_predict(op, 3, 4)
 }

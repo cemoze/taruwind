@@ -6,8 +6,8 @@
 #' @return A prepared TaruWind response.
 #' @export
 #' @examples
-#' h <- matrix(0, 5, 5)
-#' op <- taruwind_build(h, h + .03, 90, 0, 0, 180, 180, 900, .03)
+#' h = matrix(0, 5, 5)
+#' op = taruwind_build(h, h + .03, 90, 0, 0, 180, 180, 900, .03)
 #' taruwind_predict(op, 3, 4)
 taruwind_build <- function(...) taruwind_modal_prepare(...)
 

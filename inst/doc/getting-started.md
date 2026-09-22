@@ -26,8 +26,8 @@ find.package("taruwind")
 Try a synthetic flat surface first:
 
 ```r
-h <- matrix(0, 5, 5)
-op <- taruwind_build(
+h = matrix(0, 5, 5)
+op = taruwind_build(
   dem = h, roughness = h + 0.03, dx = 90,
   x0 = 0, y0 = 0, x = 180, y = 180,
   depth = 900, source_z0 = 0.03
@@ -58,7 +58,7 @@ DEM values represent **terrain elevation in metres**. Roughness values represent
 Check availability first; this command downloads nothing:
 
 ```r
-needed <- c("taruwind", "terra", "ncdf4", "Rarr", "lutz")
+needed = c("taruwind", "terra", "ncdf4", "Rarr", "lutz")
 setNames(vapply(needed, requireNamespace, logical(1), quietly = TRUE), needed)
 ```
 
@@ -95,8 +95,8 @@ directory. The example below explicitly chooses a persistent user cache so
 downloads and queued CDS requests can be reused after restarting R.
 
 ```r
-cache <- file.path(tools::R_user_dir("taruwind", "cache"), "first-example")
-wind <- taruwind_downscale(
+cache = file.path(tools::R_user_dir("taruwind", "cache"), "first-example")
+wind = taruwind_downscale(
   lon = 29.02, lat = 41.02,
   start = "2020-01-01 00:00:00",
   end   = "2020-01-01 02:00:00",
@@ -137,7 +137,7 @@ The `u10`/`v10` or `u100`/`v100` columns are also **input** components, not
 downscaled output components. This version returns speed as its final product.
 
 ```r
-wind$increment <- wind$taruwind_speed - wind$wind_speed
+wind$increment = wind$taruwind_speed - wind$wind_speed
 plot(wind$timestamp_utc, wind$wind_speed, type = "l", col = "#0072B2",
      xlab = "UTC", ylab = "Wind speed (m/s)",
      ylim = range(c(wind$wind_speed, wind$taruwind_speed), finite = TRUE))
@@ -152,12 +152,12 @@ observations are needed to assess accuracy.
 ## 5. Save the response and reuse it
 
 ```r
-responses <- attr(wind, "responses")
+responses = attr(wind, "responses")
 saveRDS(responses, "taruwind-responses.rds")
 saveRDS(wind, "taruwind-first-result.rds")
 write.csv(as.data.frame(wind), "taruwind-first-result.csv", row.names = FALSE)
 
-later <- taruwind_downscale(
+later = taruwind_downscale(
   lon = 29.02, lat = 41.02,
   period = c("2020-01-02", "2020-01-02"),
   responses = responses, cache_dir = cache
@@ -169,7 +169,7 @@ inclusive. This reused response still belongs to the **990 m test domain**.
 Reusing it does not enlarge the domain. Build a new response for a normal 30 km
 analysis.
 
-In another session, use `responses <- readRDS("taruwind-responses.rds")`.
+In another session, use `responses = readRDS("taruwind-responses.rds")`.
 CSV does not preserve model/provenance attributes; use RDS for that purpose.
 
 Rebuild whenever you change the DEM, roughness, resolution, domain, coordinates,
@@ -181,9 +181,9 @@ does not update the saved response.
 After the single-site example works:
 
 ```r
-sites <- data.frame(site_id = c("site_a", "site_b"),
+sites = data.frame(site_id = c("site_a", "site_b"),
                     lon = c(29.02, 29.04), lat = c(41.02, 41.04))
-network <- taruwind_downscale(
+network = taruwind_downscale(
   sites = sites, period = c("2020-01-01", "2020-01-01"),
   roughness = "worldcover", workers = "auto", local_tz = TRUE,
   cache_dir = cache
@@ -208,10 +208,10 @@ With georeferenced DEM and **aerodynamic z₀ in metres** rasters:
 
 ```r
 # Replace these placeholder paths with actual files; this example is offline.
-profile <- taruwind_source_profile(
+profile = taruwind_source_profile(
   lon = 29.02, lat = 41.02, fsr_file = "my-era5-fsr.nc"
 )
-op <- taruwind_prepare_site(
+op = taruwind_prepare_site(
   lon = 29.02, lat = 41.02,
   dem = "my-dem.tif", roughness = "my-aerodynamic-roughness.tif",
   depth = profile$depth, source_z0 = profile$source_z0
