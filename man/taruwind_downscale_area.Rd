@@ -25,6 +25,7 @@ taruwind_downscale_area(
   workers = "auto",
   profile_year = 2021,
   profile_wait_seconds = 60,
+  refresh = c("auto", "always", "never"),
   quiet = FALSE
 )
 }
@@ -71,6 +72,10 @@ or an integer from 1 to 16; the memory guard may reduce concurrency.}
 from the wind period. See [taruwind_source_profile()].}
 
 \item{profile_wait_seconds}{CDS queue polling limit per site/call.}
+
+\item{refresh}{Refresh mutable ARCO metadata and recent ERA5T chunks
+automatically once per day (`"auto"`), on every call (`"always"`), or
+never (`"never"`). Historical cached chunks are immutable and reused.}
 
 \item{quiet}{Suppress download progress messages.}
 }

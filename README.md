@@ -42,10 +42,21 @@ You do not need to call all exported functions in sequence.
 | Profile assumptions / resource policy | `taruwind_source_profile()`, `taruwind_neutral_depth()`, `taruwind_limits()`, `taruwind_workers()` |
 | Inspect cached files and total size without deleting data | `taruwind_cache_info()` |
 
-The geographic workflow reports five stages and labels cached versus downloaded
-ERA5 chunks. Set `quiet = TRUE` to suppress progress. Stage numbers do not
+The geographic workflow reports six stages, beginning with an ERA5 availability
+check before terrain preparation. It labels cached versus downloaded ERA5
+chunks. Set `quiet = TRUE` to suppress progress. Stage numbers do not
 estimate elapsed-time percentages. Explicit persistent caches are kept for reuse;
 the default cache is session-temporary.
+
+Requests must start in 1940 or later, end no later than the current UTC time,
+and use complete hourly timestamps. The actual latest available ERA5 hour is
+checked against the CDS ARCO time axis before terrain or source-profile work;
+there is no hard-coded five- or seven-day cutoff. If cached metadata is behind
+the source, use `refresh = "always"`. The automatic workflow allows up to 100
+sites and 10 million site-hours, plus reflected terrain-grid limits; inspect
+`taruwind_limits()`. These are safety guards, not an estimate or guarantee of
+network bytes, runtime or peak memory. Oversized requests stop with an error
+and should be split into recoverable batches.
 
 `wind_speed` in the geographic output is **vector-bilinear ERA5**;
 `taruwind_speed` is the final downscaled speed, both in m/s. The `u`/`v`

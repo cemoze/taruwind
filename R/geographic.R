@@ -156,19 +156,38 @@ taruwind_downscale <- function(sites=NULL,lon=NULL,lat=NULL,start=NULL,end=NULL,
     resolution=90,domain_m=30000,wind_height=10,local_tz=FALSE,
     cache_dir=file.path(tempdir(), "taruwind-cache"),api_key=NULL,
     responses=NULL,workers="auto",profile_year=2021,profile_wait_seconds=60,
-    quiet=FALSE) {
+    refresh=c("auto","always","never"),quiet=FALSE) {
   if (!is.logical(quiet) || length(quiet)!=1L || is.na(quiet)) stop("quiet must be TRUE or FALSE")
+  refresh <- match.arg(refresh)
   report = function(...) if (!quiet) message(...)
   target <- .taruwind_sites(sites,lon,lat)
   when <- .taruwind_resolve_period(start,end,period)
-  .taruwind_guard_request(target,when)
+  if (!is.numeric(resolution) || length(resolution)!=1L ||
+      !is.finite(resolution) || resolution<=0 ||
+      !is.numeric(domain_m) || length(domain_m)!=1L ||
+      !is.finite(domain_m) || domain_m<=0) {
+    stop("resolution and domain_m must be positive finite scalars", call.=FALSE)
+  }
+  .taruwind_guard_request(target,when,
+    resolution=if(is.null(responses)) resolution else NULL,
+    domain_km=if(is.null(responses)) domain_m/1000 else NULL,
+    allow_override=FALSE)
   wind_height <- .taruwind_wind_height(wind_height)
+  if(is.null(responses) && is.null(roughness)) {
+    stop("Supply roughness or explicitly select roughness = 'worldcover'")
+  }
+  hours <- .taruwind_request_hours(when)
+  report("Request plan: ", nrow(target), " site(s) x ",
+    format(hours,big.mark=",",scientific=FALSE), " hours = ",
+    format(nrow(target)*hours,big.mark=",",scientific=FALSE),
+    " site-hours. Network bytes depend on source chunking and cache state.")
   report("Cache directory: ", normalizePath(cache_dir, mustWork=FALSE))
-  report("[1/5] Source profile: ", if (!is.null(responses)) "reusing prepared responses" else
+  report("[1/6] Checking currently available ERA5 hours before terrain work.")
+  axis <- .taruwind_era5_axis(when,api_key,file.path(cache_dir,"era5"),refresh,quiet)
+  report("[2/6] Source profile: ", if (!is.null(responses)) "reusing prepared responses" else
     if (!is.null(source_z0)) "using supplied values" else
     "retrieving reference FSR (cache first; CDS queue may require waiting)")
   if(is.null(responses)) {
-    if(is.null(roughness)) stop("Supply roughness or explicitly select roughness = 'worldcover'")
     profiles <- NULL
     if(is.null(source_z0)) {
       profiles <- lapply(seq_len(nrow(target)),function(i)
@@ -189,7 +208,7 @@ taruwind_downscale <- function(sites=NULL,lon=NULL,lat=NULL,start=NULL,end=NULL,
       if(!is.numeric(x)||!length(x)%in%c(1L,nrow(target))) stop("Profile input length must be one or site count")
       x[if(length(x)==1L) 1L else i]
     }
-    report("[2/5] Preparing terrain and roughness for ", nrow(target), " site(s).")
+    report("[3/6] Preparing terrain and roughness for ", nrow(target), " site(s).")
     inputs <- lapply(seq_len(nrow(target)),function(i) {
       report("  Site ", i, "/", nrow(target), ": ", target$site_id[i])
       .taruwind_site_inputs(target$lon[i],target$lat[i],per_site(roughness,i),
@@ -197,15 +216,15 @@ taruwind_downscale <- function(sites=NULL,lon=NULL,lat=NULL,start=NULL,end=NULL,
         resolution=resolution,domain_m=domain_m,height=wind_height,
         cache_dir=file.path(cache_dir,"dem"),quiet=quiet)
     })
-    report("[3/5] Building terrain responses. This step is independent of requested hours.")
+    report("[4/6] Building terrain responses. This step is independent of requested hours.")
     responses <- taruwind_build_many(lapply(inputs,`[[`,"arguments"),workers=workers)
     for(i in seq_along(responses)) responses[[i]]$provenance$geographic <- inputs[[i]]$geographic
     if(!is.null(profiles)) for(i in seq_along(responses))
       responses[[i]]$provenance$source_profile <- profiles[[i]]$provenance
     names(responses) <- target$site_id
   } else {
-    report("[2/5] Terrain preparation skipped: reusing responses.")
-    report("[3/5] Terrain solve skipped: reusing responses.")
+    report("[3/6] Terrain preparation skipped: reusing responses.")
+    report("[4/6] Terrain solve skipped: reusing responses.")
   }
   for(i in seq_len(nrow(target))) {
     op <- responses[[target$site_id[i]]]
@@ -214,11 +233,10 @@ taruwind_downscale <- function(sites=NULL,lon=NULL,lat=NULL,start=NULL,end=NULL,
        abs(g$lon-target$lon[i])>1e-8||abs(g$lat-target$lat[i])>1e-8||
        op$provenance$height!=wind_height) stop("Prepared response coordinates/height do not match")
   }
-  report("[4/5] Reading hourly ERA5 wind from the CDS Zarr store.")
-  winds <- taruwind_download_era5(sites=target,start=when$start,end=when$end,
-    api_key=api_key,cache_dir=file.path(cache_dir,"era5"),local_tz=local_tz,
-    wind_height=wind_height,quiet=quiet)
-  report("[5/5] Applying responses to ", nrow(winds), " site-hour records.")
+  report("[5/6] Reading hourly ERA5 wind from the CDS Zarr store.")
+  winds <- .taruwind_download_era5_ready(target,when,axis,local_tz,FALSE,
+    quiet,wind_height)
+  report("[6/6] Applying responses to ", nrow(winds), " site-hour records.")
   out <- tibble::as_tibble(winds)
   out$taruwind_speed <- NA_real_
   for(id in target$site_id) {

@@ -12,6 +12,8 @@ First public-version candidate, not yet published.
 - Reusable geographic responses, UTC/local timestamps and consistent site IDs.
 - Bounded local-area wind rasters, aligned elevation and roughness layers, and
   a base-R map plotting helper.
+- Fail-fast ERA5 time-axis checks before terrain work, request-size reporting,
+  and enforced reflected-grid limits for multi-site workflows.
 - Linux, Windows and macOS package checks in the private GitHub repository.
 - Automatic latitude-based neutral depth and resumable CDS FSR reference
   acquisition, with an explicit diagnostic convention and provenance.

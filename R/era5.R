@@ -18,6 +18,9 @@
 #'   `sites`; scalar values are allowed.
 #' @param start,end Start and end of the requested period. Date-only values
 #'   include the complete UTC day; date-times select exact inclusive hours.
+#'   Requests before 1940 or after the current time fail immediately. Available
+#'   recent hours are checked against the live CDS ARCO time axis; no fixed
+#'   five- or seven-day delay is assumed.
 #' @param period Optional two-element start/end vector. Supply this instead of
 #'   separate `start` and `end` values.
 #' @param wind_height ERA5 diagnostic wind height in metres. Supported values
@@ -51,51 +54,36 @@ taruwind_download_era5 <- function(
     local_tz = FALSE, include_nodes = FALSE,
     refresh = c("auto", "always", "never"), quiet = FALSE,
     allow_large = FALSE, wind_height = 10L) {
-  .taruwind_require("Rarr", "reading the CDS ARCO Zarr store")
   refresh <- match.arg(refresh)
   wind_height <- .taruwind_wind_height(wind_height)
-  u_name <- paste0("u", wind_height)
-  v_name <- paste0("v", wind_height)
   target <- .taruwind_sites(sites, lon, lat)
   period <- .taruwind_resolve_period(start, end, period)
   .taruwind_guard_request(target, period, allow_large = allow_large)
-  key <- .taruwind_cds_key(api_key)
-  store <- paste0(
-    "https://arco.datastores.ecmwf.int/cadl-arco-geo-002/arco/",
-    "reanalysis_era5_single_levels/sfc/geoChunked.zarr"
-  )
-  cache <- file.path(cache_dir, "cds_arco_sfc_geo")
-  dir.create(cache, recursive = TRUE, showWarnings = FALSE)
+  .taruwind_require("Rarr", "reading the CDS ARCO Zarr store")
+  if (!quiet) message(sprintf("ERA5 request: %d site(s), %s hourly timestamps, %s site-hours.",
+    nrow(target), format(.taruwind_request_hours(period), big.mark = ",", scientific = FALSE),
+    format(nrow(target) * .taruwind_request_hours(period), big.mark = ",", scientific = FALSE)))
+  axis <- .taruwind_era5_axis(period, api_key, cache_dir, refresh, quiet)
+  .taruwind_download_era5_ready(target, period, axis, local_tz, include_nodes,
+    quiet, wind_height)
+}
 
-  metadata_file <- file.path(cache, ".zmetadata")
-  metadata_age <- if (file.exists(metadata_file)) {
-    as.numeric(difftime(Sys.time(), file.info(metadata_file)$mtime, units = "hours"))
-  } else Inf
-  metadata_refresh <- refresh == "always" ||
-    (refresh == "auto" && metadata_age >= 24)
-  if (!file.exists(metadata_file) || metadata_refresh) {
-    old_time = if (file.exists(metadata_file)) tryCatch(
-      jsonlite::fromJSON(metadata_file, simplifyVector = FALSE)$metadata[["time/.zarray"]],
-      error = function(e) NULL) else NULL
-    if (!quiet) message("ERA5: refreshing Zarr metadata (not wind fields).")
-    .taruwind_fetch(
-      paste0(store, "/.zmetadata"), metadata_file, key, quiet,
-      overwrite = file.exists(metadata_file)
-    )
-    # The last time-coordinate chunk grows as ERA5/ERA5T is extended.
-    if (!is.null(old_time)) {
-      # Only the old final coordinate chunk can grow. Completed historical
-      # chunks remain reusable; do not discard the entire time axis daily.
-      last = ceiling(unlist(old_time$shape)[1] / unlist(old_time$chunks)[1]) - 1L
-      unlink(file.path(cache, "time", as.character(last)))
-    }
-  }
-  metadata <- jsonlite::fromJSON(metadata_file, simplifyVector = FALSE)$metadata
-  for (variable in c("time", "latitude", "longitude", u_name, v_name)) {
+.taruwind_download_era5_ready <- function(
+    target, period, axis, local_tz, include_nodes, quiet, wind_height) {
+  u_name <- paste0("u", wind_height)
+  v_name <- paste0("v", wind_height)
+  store <- axis$store
+  cache <- axis$cache
+  key <- axis$key
+  metadata <- axis$metadata
+  metadata_refresh <- axis$metadata_refresh
+  timestamp <- axis$timestamp
+  time_index <- axis$time_index
+  for (variable in c("latitude", "longitude", u_name, v_name)) {
     .taruwind_materialize_zarr_metadata(cache, variable, metadata)
   }
 
-  coordinates <- lapply(c("time", "latitude", "longitude"), function(variable) {
+  coordinates <- lapply(c("latitude", "longitude"), function(variable) {
     info <- metadata[[paste0(variable, "/.zarray")]]
     chunk_count <- ceiling(unlist(info$shape) / unlist(info$chunks))
     ids = as.character(seq_len(chunk_count[1]) - 1L)
@@ -107,16 +95,7 @@ taruwind_download_era5 <- function(
     }
     as.vector(Rarr::read_zarr_array(file.path(cache, variable)))
   })
-  names(coordinates) <- c("time", "latitude", "longitude")
-  timestamp <- as.POSIXct(as.numeric(coordinates$time), origin = "1970-01-01", tz = "UTC")
-  time_index <- which(timestamp >= period$start & timestamp <= period$end)
-  if (!length(time_index)) {
-    stop("the requested period is outside the available CDS ARCO ERA5 record")
-  }
-  if (timestamp[time_index[1]] != period$start ||
-      timestamp[time_index[length(time_index)]] != period$end) {
-    stop("the requested start/end must coincide with available hourly ERA5 timestamps")
-  }
+  names(coordinates) <- c("latitude", "longitude")
 
   brackets <- lapply(seq_len(nrow(target)), function(index) {
     .taruwind_era5_bracket(
@@ -232,6 +211,78 @@ taruwind_download_era5 <- function(
   result
 }
 
+.taruwind_era5_axis <- function(period, api_key, cache_dir, refresh = "auto", quiet = FALSE) {
+  .taruwind_require("Rarr", "reading the CDS ARCO Zarr store")
+  key <- .taruwind_cds_key(api_key)
+  store <- paste0(
+    "https://arco.datastores.ecmwf.int/cadl-arco-geo-002/arco/",
+    "reanalysis_era5_single_levels/sfc/geoChunked.zarr"
+  )
+  cache <- file.path(cache_dir, "cds_arco_sfc_geo")
+  dir.create(cache, recursive = TRUE, showWarnings = FALSE)
+  metadata_file <- file.path(cache, ".zmetadata")
+  metadata_existed <- file.exists(metadata_file)
+  metadata_age <- if (metadata_existed) {
+    as.numeric(difftime(Sys.time(), file.info(metadata_file)$mtime, units = "hours"))
+  } else Inf
+  metadata_refresh <- refresh == "always" ||
+    (refresh == "auto" && metadata_age >= 24)
+  if (!file.exists(metadata_file) || metadata_refresh) {
+    old_time <- if (file.exists(metadata_file)) tryCatch(
+      jsonlite::fromJSON(metadata_file, simplifyVector = FALSE)$metadata[["time/.zarray"]],
+      error = function(e) NULL) else NULL
+    if (!quiet) message("ERA5: refreshing Zarr metadata (not wind fields).")
+    .taruwind_fetch(
+      paste0(store, "/.zmetadata"), metadata_file, key, quiet,
+      overwrite = file.exists(metadata_file)
+    )
+    # Only the old final coordinate chunk can grow; keep historical chunks.
+    if (!is.null(old_time)) {
+      last <- ceiling(unlist(old_time$shape)[1] / unlist(old_time$chunks)[1]) - 1L
+      unlink(file.path(cache, "time", as.character(last)))
+    }
+  }
+  metadata <- jsonlite::fromJSON(metadata_file, simplifyVector = FALSE)$metadata
+  .taruwind_materialize_zarr_metadata(cache, "time", metadata)
+  info <- metadata[["time/.zarray"]]
+  chunk_count <- ceiling(unlist(info$shape)[1] / unlist(info$chunks)[1])
+  ids <- as.character(seq_len(chunk_count) - 1L)
+  missing <- sum(!file.exists(file.path(cache, "time", ids)))
+  if (!quiet) message(sprintf("ERA5 time coordinates: %d cached, %d to download.",
+    length(ids) - missing, missing))
+  for (chunk in ids) .taruwind_fetch_chunk(store, cache, "time", chunk, key, quiet)
+  timestamp <- as.POSIXct(
+    as.numeric(Rarr::read_zarr_array(file.path(cache, "time"))),
+    origin = "1970-01-01", tz = "UTC"
+  )
+  time_index <- .taruwind_check_era5_period(period, timestamp)
+  list(store = store, cache = cache, key = key, metadata = metadata,
+       metadata_refresh = metadata_refresh, timestamp = timestamp,
+       time_index = time_index)
+}
+
+.taruwind_check_era5_period <- function(period, timestamp) {
+  if (!length(timestamp) || anyNA(timestamp)) {
+    stop("The CDS ARCO ERA5 time axis is empty or invalid.", call. = FALSE)
+  }
+  available <- range(timestamp)
+  requested <- which(timestamp >= period$start & timestamp <= period$end)
+  expected <- .taruwind_request_hours(period)
+  valid <- length(requested) == expected && length(requested) > 0L &&
+    timestamp[requested[1L]] == period$start &&
+    timestamp[requested[length(requested)]] == period$end &&
+    all(diff(as.numeric(timestamp[requested])) == 3600)
+  if (!valid) {
+    fmt <- function(x) format(x, "%Y-%m-%d %H:%M UTC", tz = "UTC")
+    stop("Requested ERA5 hours are unavailable in the current CDS ARCO record (",
+      fmt(available[1L]), " to ", fmt(available[2L]), "). Requested: ",
+      fmt(period$start), " to ", fmt(period$end),
+      ". Reduce the period, or retry with refresh = 'always' after the source is updated.",
+      call. = FALSE)
+  }
+  requested
+}
+
 .taruwind_resolve_period <- function(start = NULL, end = NULL, period = NULL) {
   if (!is.null(period)) {
     if (!is.null(start) || !is.null(end) || length(period) != 2L) {
@@ -311,6 +362,13 @@ print.taruwind_era5 <- function(x, ...) {
   }
   if (as.numeric(start_time) %% 3600 != 0 || as.numeric(end_time) %% 3600 != 0) {
     stop("start and end must be aligned to whole hours")
+  }
+  if (start_time < as.POSIXct("1940-01-01 00:00:00", tz = "UTC")) {
+    stop("ERA5 requests cannot start before 1940-01-01 00:00 UTC", call. = FALSE)
+  }
+  if (end_time > Sys.time()) {
+    stop("ERA5 requests cannot end in the future",
+      call. = FALSE)
   }
   list(start = start_time, end = end_time)
 }

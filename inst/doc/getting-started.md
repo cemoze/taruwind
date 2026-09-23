@@ -147,8 +147,9 @@ is not a universal guarantee of adequacy for every landscape.
 
 ### Progress and downloaded files
 
-The console reports five stages: source profile, terrain/roughness preparation,
-response construction, ERA5 acquisition and response application. These are
+The console reports six stages: ERA5-hour availability, source profile,
+terrain/roughness preparation, response construction, ERA5 acquisition and
+response application. These are
 stage counters, not percentages of elapsed time. Use `quiet = TRUE` in
 `taruwind_downscale()` to suppress these messages. Warnings and errors remain.
 
@@ -535,9 +536,22 @@ taruwind_workers(n_sites = 10)
 ```
 
 The automatic point workflow allows up to 100 sites and 10 million site-hours.
-Reflected solves are limited to 2 million computational cells per site.
+Reflected solves are limited to 2 million computational cells per site and
+60 million cells across a request. These cells include the solver's reflected
+grid, not just the visible local square. The local-area workflow defaults to
+25 output cells and permits at most 100 when `max_cells` is raised explicitly.
 `allow_large` belongs to the separate ERA5 download helper, not the main
 `taruwind_downscale()` function. Split larger requests into batches.
+
+There is no fixed maximum number of days or years per site. The site-hour
+limit depends on the number of sites. Requests before 1940, after the current
+UTC time, or outside the hours currently present in the CDS ARCO record stop
+with errors. The source commonly trails real time by several days, but no
+fixed lag is assumed: TaruWind checks the actual time axis before downloading
+terrain or requesting a source profile. By default, mutable metadata is
+refreshed once per day; use `refresh = "always"` to check the latest source
+state immediately. The package does not impose a network-byte quota or
+promise that a request below its safety limits will be fast or fit in memory.
 
 ## Reference: troubleshooting
 
@@ -546,6 +560,8 @@ Reflected solves are limited to 2 million computational cells per site.
 | An older version loads | Restart R; inspect `find.package()` and `packageVersion()` |
 | CDS key / 403 error | API configuration and acceptance of both datasets' terms |
 | Queue timeout | Retry later with the same call and cache directory |
+| Requested ERA5 hour unavailable | Inspect the available range in the error; use `refresh = "always"` if cached metadata may be stale |
+| Request exceeds site-hour or reflected-cell limits | Reduce the period, site count or terrain domain; run recoverable batches |
 | Missing R package | Run the dependency check in Section 1 |
 | Raster gaps / unknown class | Check complete domain coverage; missing ocean cells are not automatically set to zero |
 | Response coordinate/height mismatch | Match the target, `site_id` and `wind_height` |

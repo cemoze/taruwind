@@ -35,8 +35,9 @@ test_that("geographic pipeline joins forcing to the current response", {
   skip_if_not_installed("terra")
   r = terra::rast(nrows=21,ncols=21,xmin=28.9,xmax=29.1,ymin=40.9,ymax=41.1,crs="EPSG:4326")
   terra::values(r)=0
-  local_mocked_bindings(taruwind_download_era5=function(sites,...) {
-    tibble::tibble(site_id=sites$site_id,lon=sites$lon,lat=sites$lat,
+  local_mocked_bindings(.taruwind_era5_axis=function(...) NULL,
+    .taruwind_download_era5_ready=function(target,...) {
+    tibble::tibble(site_id=target$site_id,lon=target$lon,lat=target$lat,
       timestamp_utc=as.POSIXct("2020-01-01",tz="UTC"),u=3,v=4,wind_speed=5)
   },taruwind_source_profile=function(...) list(source_z0=.03,
     provenance=list(adapter="test fixture")))

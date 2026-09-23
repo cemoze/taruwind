@@ -30,7 +30,10 @@ columns. `longitude` and `latitude` are accepted aliases. An optional
 `sites`; scalar values are allowed.}
 
 \item{start, end}{Start and end of the requested period. Date-only values
-include the complete UTC day; date-times select exact inclusive hours.}
+include the complete UTC day; date-times select exact inclusive hours.
+Requests before 1940 or after the current time fail immediately. Available
+recent hours are checked against the live CDS ARCO time axis; no fixed
+five- or seven-day delay is assumed.}
 
 \item{period}{Optional two-element start/end vector. Supply this instead of
 separate `start` and `end` values.}

@@ -25,7 +25,8 @@ taruwind_downscale_area <- function(lon,lat,start=NULL,end=NULL,period=NULL,
     roughness="worldcover",depth=NULL,source_z0=NULL,dem=NULL,
     resolution=90,domain_m=30000,wind_height=10,
     cache_dir=file.path(tempdir(),"taruwind-cache"),api_key=NULL,
-    workers="auto",profile_year=2021,profile_wait_seconds=60,quiet=FALSE) {
+    workers="auto",profile_year=2021,profile_wait_seconds=60,
+    refresh=c("auto","always","never"),quiet=FALSE) {
   .taruwind_require("terra","area downscaling")
   centre <- .taruwind_sites(lon=lon,lat=lat)
   if(nrow(centre)!=1L || abs(lat)>85) stop("One centre between 85 S and 85 N required")
@@ -52,7 +53,7 @@ taruwind_downscale_area <- function(lon,lat,start=NULL,end=NULL,period=NULL,
     resolution=resolution,domain_m=domain_m,wind_height=wind_height,
     cache_dir=cache_dir,api_key=api_key,workers=workers,
     profile_year=profile_year,profile_wait_seconds=profile_wait_seconds,
-    quiet=quiet)
+    refresh=refresh,quiet=quiet)
   timestamps <- sort(unique(wind$timestamp_utc))
   variables <- c("taruwind_speed","wind_speed")
   prefixes <- c("taruwind","bilinear")

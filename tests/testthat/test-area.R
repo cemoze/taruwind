@@ -27,10 +27,11 @@ test_that("area output keeps each target and hour in its raster cell", {
                     ymin=-1845,ymax=1845,crs=crs)
   terra::values(dem) = 0
   rough = dem*0 + .03
-  local_mocked_bindings(taruwind_download_era5=function(sites,...) {
+  local_mocked_bindings(.taruwind_era5_axis=function(...) NULL,
+    .taruwind_download_era5_ready=function(target,...) {
     time = as.POSIXct(c("2020-01-01 00:00:00","2020-01-01 01:00:00"),tz="UTC")
-    data = sites[rep(seq_len(nrow(sites)),each=2),]
-    data$timestamp_utc = rep(time,nrow(sites))
+    data = target[rep(seq_len(nrow(target)),each=2),]
+    data$timestamp_utc = rep(time,nrow(target))
     data$u = seq_len(nrow(data))
     data$v = 0
     data$wind_speed = data$u

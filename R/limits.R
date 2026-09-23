@@ -5,7 +5,10 @@
 #' conservative limits are checked before network or DEM work starts. Advanced
 #' users of [taruwind_download_era5()] can explicitly opt out with
 #' `allow_large = TRUE`. The main [taruwind_downscale()] workflow does not expose
-#' this override; split larger requests into recoverable batches.
+#' this override; split larger requests into recoverable batches. Terrain-cell
+#' limits count the reflected computational grid, not just the output square.
+#' They do not estimate network bytes or guarantee that a large request will fit
+#' in memory.
 #'
 #' @return A named list containing the default limits.
 #' @export
@@ -19,14 +22,18 @@ taruwind_limits <- function() {
   )
 }
 
+.taruwind_request_hours <- function(period) {
+  as.numeric(difftime(period$end, period$start, units = "hours")) + 1
+}
+
 .taruwind_guard_request <- function(
     sites, period, resolution = NULL, domain_km = NULL,
-    allow_large = FALSE) {
+    allow_large = FALSE, allow_override = TRUE) {
   if (!is.logical(allow_large) || length(allow_large) != 1L || is.na(allow_large)) {
     stop("allow_large must be TRUE or FALSE")
   }
   limits <- taruwind_limits()
-  hours <- as.numeric(difftime(period$end, period$start, units = "hours")) + 1
+  hours <- .taruwind_request_hours(period)
   site_hours <- nrow(sites) * hours
   issues <- character()
   if (nrow(sites) > limits$max_sites) {
@@ -41,13 +48,20 @@ taruwind_limits <- function() {
     )
   }
   if (!is.null(resolution) && !is.null(domain_km)) {
-    cells_per_site <- (domain_km * 1000 / resolution)^2
+    if (!is.numeric(resolution) || length(resolution) != 1L ||
+        !is.finite(resolution) || resolution <= 0 ||
+        !is.numeric(domain_km) || length(domain_km) != 1L ||
+        !is.finite(domain_km) || domain_km <= 0) {
+      stop("resolution and domain_km must be positive finite scalars", call. = FALSE)
+    }
+    n <- max(3, 2 * ceiling((domain_km * 1000 / resolution - 1) / 2) + 1)
+    cells_per_site <- 9 * n * n
     total_cells <- nrow(sites) * cells_per_site
     if (cells_per_site > limits$max_cells_per_site) {
       issues <- c(
         issues,
         paste0(format(round(cells_per_site), big.mark = ",", scientific = FALSE),
-               " estimated terrain cells/site > ",
+               " reflected computational cells/site > ",
                format(limits$max_cells_per_site, big.mark = ",", scientific = FALSE))
       )
     }
@@ -55,7 +69,7 @@ taruwind_limits <- function() {
       issues <- c(
         issues,
         paste0(format(round(total_cells), big.mark = ",", scientific = FALSE),
-               " estimated total terrain cells > ",
+               " total reflected computational cells > ",
                format(limits$max_total_terrain_cells, big.mark = ",", scientific = FALSE))
       )
     }
@@ -64,7 +78,11 @@ taruwind_limits <- function() {
   message <- paste0(
     "request exceeds TaruWind automatic-workflow safety limits: ",
     paste(issues, collapse = "; "),
-    ". Reduce/split the request or set allow_large = TRUE deliberately."
+    if (allow_override) {
+      ". Reduce/split the request or set allow_large = TRUE deliberately."
+    } else {
+      ". Reduce or split the request into recoverable batches."
+    }
   )
   if (!allow_large) stop(message, call. = FALSE)
   warning(message, call. = FALSE)

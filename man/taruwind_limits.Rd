@@ -15,5 +15,8 @@ local terrain domains, not accidental continental raster production. These
 conservative limits are checked before network or DEM work starts. Advanced
 users of [taruwind_download_era5()] can explicitly opt out with
 `allow_large = TRUE`. The main [taruwind_downscale()] workflow does not expose
-this override; split larger requests into recoverable batches.
+this override; split larger requests into recoverable batches. Terrain-cell
+limits count the reflected computational grid, not just the output square.
+They do not estimate network bytes or guarantee that a large request will fit
+in memory.
 }

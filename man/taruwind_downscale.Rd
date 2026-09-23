@@ -25,6 +25,7 @@ taruwind_downscale(
   workers = "auto",
   profile_year = 2021,
   profile_wait_seconds = 60,
+  refresh = c("auto", "always", "never"),
   quiet = FALSE
 )
 }
@@ -37,7 +38,10 @@ columns. `longitude` and `latitude` are accepted aliases. An optional
 `sites`; scalar values are allowed.}
 
 \item{start, end}{Start and end of the requested period. Date-only values
-include the complete UTC day; date-times select exact inclusive hours.}
+include the complete UTC day; date-times select exact inclusive hours.
+Requests before 1940 or after the current time fail immediately. Available
+recent hours are checked against the live CDS ARCO time axis; no fixed
+five- or seven-day delay is assumed.}
 
 \item{period}{Optional two-element start/end vector. Supply this instead of
 separate `start` and `end` values.}
@@ -80,6 +84,10 @@ or an integer from 1 to 16; the memory guard may reduce concurrency.}
 from the wind period. See [taruwind_source_profile()].}
 
 \item{profile_wait_seconds}{CDS queue polling limit per site/call.}
+
+\item{refresh}{Refresh mutable ARCO metadata and recent ERA5T chunks
+automatically once per day (`"auto"`), on every call (`"always"`), or
+never (`"never"`). Historical cached chunks are immutable and reused.}
 
 \item{quiet}{Suppress download progress messages.}
 }

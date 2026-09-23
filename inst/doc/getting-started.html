@@ -561,11 +561,12 @@ for every landscape.</p>
 during that call</h2>
 <h3 id="progress-and-downloaded-files">Progress and downloaded
 files</h3>
-<p>The console reports five stages: source profile, terrain/roughness
-preparation, response construction, ERA5 acquisition and response
-application. These are stage counters, not percentages of elapsed time.
-Use <code>quiet = TRUE</code> in <code>taruwind_downscale()</code> to
-suppress these messages. Warnings and errors remain.</p>
+<p>The console reports six stages: ERA5-hour availability, source
+profile, terrain/roughness preparation, response construction, ERA5
+acquisition and response application. These are stage counters, not
+percentages of elapsed time. Use <code>quiet = TRUE</code> in
+<code>taruwind_downscale()</code> to suppress these messages. Warnings
+and errors remain.</p>
 <p>ERA5 winds are read from Zarr, not downloaded as GRIB. The messages
 distinguish coordinate arrays from wind chunks and report cache reuse. A
 stored wind chunk can cover many more hours than requested; only the
@@ -975,9 +976,24 @@ solves run in parallel.</li>
 <span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_workers</span>(<span class="at">n_sites =</span> <span class="dv">10</span>)</span></code></pre></div>
 <p>The automatic point workflow allows up to 100 sites and 10 million
 site-hours. Reflected solves are limited to 2 million computational
-cells per site. <code>allow_large</code> belongs to the separate ERA5
-download helper, not the main <code>taruwind_downscale()</code>
-function. Split larger requests into batches.</p>
+cells per site and 60 million cells across a request. These cells
+include the solver’s reflected grid, not just the visible local square.
+The local-area workflow defaults to 25 output cells and permits at most
+100 when <code>max_cells</code> is raised explicitly.
+<code>allow_large</code> belongs to the separate ERA5 download helper,
+not the main <code>taruwind_downscale()</code> function. Split larger
+requests into batches.</p>
+<p>There is no fixed maximum number of days or years per site. The
+site-hour limit depends on the number of sites. Requests before 1940,
+after the current UTC time, or outside the hours currently present in
+the CDS ARCO record stop with errors. The source commonly trails real
+time by several days, but no fixed lag is assumed: TaruWind checks the
+actual time axis before downloading terrain or requesting a source
+profile. By default, mutable metadata is refreshed once per day; use
+<code>refresh = "always"</code> to check the latest source state
+immediately. The package does not impose a network-byte quota or promise
+that a request below its safety limits will be fast or fit in
+memory.</p>
 <h2 id="reference-troubleshooting">Reference: troubleshooting</h2>
 <table>
 <colgroup>
@@ -1003,6 +1019,16 @@ function. Split larger requests into batches.</p>
 <tr class="odd">
 <td>Queue timeout</td>
 <td>Retry later with the same call and cache directory</td>
+</tr>
+<tr class="even">
+<td>Requested ERA5 hour unavailable</td>
+<td>Inspect the available range in the error; use
+<code>refresh = "always"</code> if cached metadata may be stale</td>
+</tr>
+<tr class="odd">
+<td>Request exceeds site-hour or reflected-cell limits</td>
+<td>Reduce the period, site count or terrain domain; run recoverable
+batches</td>
 </tr>
 <tr class="even">
 <td>Missing R package</td>
