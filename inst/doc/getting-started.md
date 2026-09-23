@@ -19,9 +19,37 @@ created earlier. Installation commands are needed only once. The later reference
 sections explain extensions; they are not extra steps required to complete the
 example. No local NetCDF or raster files need to be prepared manually.
 
-## 1. Open R and define our Istanbul example
+## 1. Prepare R and data access
 
-In RStudio, select **Session → Restart R** (`Ctrl+Shift+F10`), then run:
+Start with the software requirements, before defining a site or requesting
+data. In RStudio, select **Session → Restart R** (`Ctrl+Shift+F10`). Check which
+packages are already available; this downloads nothing:
+
+```r
+needed = c("taruwind", "terra", "ncdf4", "Rarr", "lutz")
+setNames(vapply(needed, requireNamespace, logical(1), quietly = TRUE), needed)
+```
+
+Install missing dependencies as needed. `Rarr` is available through
+Bioconductor; `BiocManager` is only its installer:
+
+```r
+cran_packages = c("terra", "ncdf4", "lutz")
+missing_cran = cran_packages[!vapply(cran_packages, requireNamespace,
+                                     logical(1), quietly = TRUE)]
+if (length(missing_cran)) install.packages(missing_cran)
+if (!requireNamespace("Rarr", quietly = TRUE)) {
+  if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+  BiocManager::install("Rarr", ask = FALSE, update = FALSE)
+}
+```
+
+`terra`, `ncdf4` and `Rarr` support this automatic download workflow. `lutz`
+is needed only if you later request automatic local time zones. TaruWind is
+not yet on CRAN; use its locally installed package rather than
+`install.packages("taruwind")`.
+
+Now load the package and confirm which local version R is using:
 
 ```r
 library(taruwind)
@@ -30,24 +58,18 @@ find.package("taruwind")
 ?taruwind
 ```
 
-Define the location and requested hours once. All subsequent steps use these
-objects rather than introducing a different example. Times are UTC and both
-endpoints are included: this request contains **three**, not two, hourly records.
+### CDS access
 
-```r
-site = data.frame(site_id = "istanbul_example", lon = 29.02, lat = 41.02)
-start_utc = "2020-01-01 00:00:00"
-end_utc = "2020-01-01 02:00:00"
-cache = file.path(tools::R_user_dir("taruwind", "cache"), "first-example")
-output_dir = file.path(getwd(), "taruwind-istanbul-example")
-dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-```
+Follow the [official CDS API setup instructions](https://cds.climate.copernicus.eu/how-to-api).
+The package can read `~/.cdsapirc` or the `CDSAPIKEY` / `CDS_API_KEY` environment
+variable. Accept the applicable terms for the ERA5 single-level and monthly-mean
+datasets in your CDS account.
 
-`cache` holds reusable downloaded inputs; `output_dir` will hold our saved results.
-Print either variable to see its full path. No files are deleted
-by this example.
+Existing credentials may already be sufficient. **Do not put your API key in
+scripts, GitHub or chat messages.** DEM and WorldCover downloads do not require
+a CDS key. The package does not require Python.
 
-## 2. Prepare for real data
+For the workflow below, these are the inputs and their sources:
 
 | Input | What the package does | What you provide |
 |---|---|---|
@@ -61,37 +83,23 @@ by this example.
 DEM values represent **terrain elevation in metres**. Roughness values represent
 **aerodynamic z₀ in metres**, not land-cover class identifiers.
 
-### R dependencies
+## 2. Define our Istanbul site and period
 
-Check availability first; this command downloads nothing:
-
-```r
-needed = c("taruwind", "terra", "ncdf4", "Rarr", "lutz")
-setNames(vapply(needed, requireNamespace, logical(1), quietly = TRUE), needed)
-```
-
-Install missing dependencies as needed:
+With the R packages and CDS access ready, define the location and requested
+hours once. All later steps use these same objects. Times are UTC and both
+endpoints are included: this request contains **three**, not two, hourly records.
 
 ```r
-# Run only for packages that are missing:
-install.packages(c("terra", "ncdf4", "lutz"))
-if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
-BiocManager::install("Rarr", ask = FALSE, update = FALSE)
+site = data.frame(site_id = "istanbul_example", lon = 29.02, lat = 41.02)
+start_utc = "2020-01-01 00:00:00"
+end_utc = "2020-01-01 02:00:00"
+cache = file.path(tools::R_user_dir("taruwind", "cache"), "first-example")
+output_dir = file.path(getwd(), "taruwind-istanbul-example")
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 ```
 
-`lutz` is needed only for automatic local time zones. TaruWind is not yet on
-CRAN; use the locally installed package rather than `install.packages("taruwind")`.
-
-### CDS access
-
-Follow the [official CDS API setup instructions](https://cds.climate.copernicus.eu/how-to-api).
-The package can read `~/.cdsapirc` or the `CDSAPIKEY` / `CDS_API_KEY` environment
-variable. Accept the applicable terms for the ERA5 single-level and monthly-mean
-datasets in your CDS account.
-
-Existing credentials may already be sufficient. **Do not put your API key in
-scripts, GitHub or chat messages.** DEM and WorldCover downloads do not require
-a CDS key. The package does not require Python.
+`cache` holds reusable downloaded inputs; `output_dir` will hold our saved results.
+Print either variable to see its full path. No files are deleted by this example.
 
 ## 3. Obtain the first three hours at our site
 
@@ -262,7 +270,7 @@ inclusive. This reused response still belongs to the **990 m test domain**.
 Reusing it does not enlarge the domain. Build a new response for a normal 30 km
 analysis.
 
-In another session, recreate `site`, `cache` and `output_dir` from Step 1,
+In another session, recreate `site`, `cache` and `output_dir` from Step 2,
 then load `responses = readRDS(file.path(output_dir, "responses.rds"))`
 before running the `later` call.
 CSV does not preserve model/provenance attributes; use RDS for that purpose.
@@ -474,7 +482,7 @@ Reflected solves are limited to 2 million computational cells per site.
 | An older version loads | Restart R; inspect `find.package()` and `packageVersion()` |
 | CDS key / 403 error | API configuration and acceptance of both datasets' terms |
 | Queue timeout | Retry later with the same call and cache directory |
-| Missing R package | Run the dependency check in Section 2 |
+| Missing R package | Run the dependency check in Section 1 |
 | Raster gaps / unknown class | Check complete domain coverage; missing ocean cells are not automatically set to zero |
 | Response coordinate/height mismatch | Match the target, `site_id` and `wind_height` |
 | Slow initial preparation | Check terrain complexity and domain size; separate download time |

@@ -339,16 +339,14 @@ Istanbul</h1>
 href="#the-story-one-location-from-coordinates-to-reusable-predictions"
 id="toc-the-story-one-location-from-coordinates-to-reusable-predictions">The
 story: one location, from coordinates to reusable predictions</a></li>
-<li><a href="#open-r-and-define-our-istanbul-example"
-id="toc-open-r-and-define-our-istanbul-example">1. Open R and define our
-Istanbul example</a></li>
-<li><a href="#prepare-for-real-data" id="toc-prepare-for-real-data">2.
-Prepare for real data</a>
+<li><a href="#prepare-r-and-data-access"
+id="toc-prepare-r-and-data-access">1. Prepare R and data access</a>
 <ul>
-<li><a href="#r-dependencies" id="toc-r-dependencies">R
-dependencies</a></li>
 <li><a href="#cds-access" id="toc-cds-access">CDS access</a></li>
 </ul></li>
+<li><a href="#define-our-istanbul-site-and-period"
+id="toc-define-our-istanbul-site-and-period">2. Define our Istanbul site
+and period</a></li>
 <li><a href="#obtain-the-first-three-hours-at-our-site"
 id="toc-obtain-the-first-three-hours-at-our-site">3. Obtain the first
 three hours at our site</a></li>
@@ -418,28 +416,46 @@ Each step uses objects created earlier. Installation commands are needed
 only once. The later reference sections explain extensions; they are not
 extra steps required to complete the example. No local NetCDF or raster
 files need to be prepared manually.</p>
-<h2 id="open-r-and-define-our-istanbul-example">1. Open R and define our
-Istanbul example</h2>
-<p>In RStudio, select <strong>Session → Restart R</strong>
-(<code>Ctrl+Shift+F10</code>), then run:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(taruwind)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">packageVersion</span>(<span class="st">&quot;taruwind&quot;</span>)  <span class="co"># Expected: 0.1.0</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">find.package</span>(<span class="st">&quot;taruwind&quot;</span>)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>?taruwind</span></code></pre></div>
-<p>Define the location and requested hours once. All subsequent steps
-use these objects rather than introducing a different example. Times are
-UTC and both endpoints are included: this request contains
-<strong>three</strong>, not two, hourly records.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>site <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">site_id =</span> <span class="st">&quot;istanbul_example&quot;</span>, <span class="at">lon =</span> <span class="fl">29.02</span>, <span class="at">lat =</span> <span class="fl">41.02</span>)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>start_utc <span class="ot">=</span> <span class="st">&quot;2020-01-01 00:00:00&quot;</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>end_utc <span class="ot">=</span> <span class="st">&quot;2020-01-01 02:00:00&quot;</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>cache <span class="ot">=</span> <span class="fu">file.path</span>(tools<span class="sc">::</span><span class="fu">R_user_dir</span>(<span class="st">&quot;taruwind&quot;</span>, <span class="st">&quot;cache&quot;</span>), <span class="st">&quot;first-example&quot;</span>)</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>output_dir <span class="ot">=</span> <span class="fu">file.path</span>(<span class="fu">getwd</span>(), <span class="st">&quot;taruwind-istanbul-example&quot;</span>)</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(output_dir, <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
-<p><code>cache</code> holds reusable downloaded inputs;
-<code>output_dir</code> will hold our saved results. Print either
-variable to see its full path. No files are deleted by this example.</p>
-<h2 id="prepare-for-real-data">2. Prepare for real data</h2>
+<h2 id="prepare-r-and-data-access">1. Prepare R and data access</h2>
+<p>Start with the software requirements, before defining a site or
+requesting data. In RStudio, select <strong>Session → Restart R</strong>
+(<code>Ctrl+Shift+F10</code>). Check which packages are already
+available; this downloads nothing:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>needed <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;taruwind&quot;</span>, <span class="st">&quot;terra&quot;</span>, <span class="st">&quot;ncdf4&quot;</span>, <span class="st">&quot;Rarr&quot;</span>, <span class="st">&quot;lutz&quot;</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">setNames</span>(<span class="fu">vapply</span>(needed, requireNamespace, <span class="fu">logical</span>(<span class="dv">1</span>), <span class="at">quietly =</span> <span class="cn">TRUE</span>), needed)</span></code></pre></div>
+<p>Install missing dependencies as needed. <code>Rarr</code> is
+available through Bioconductor; <code>BiocManager</code> is only its
+installer:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>cran_packages <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;terra&quot;</span>, <span class="st">&quot;ncdf4&quot;</span>, <span class="st">&quot;lutz&quot;</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>missing_cran <span class="ot">=</span> cran_packages[<span class="sc">!</span><span class="fu">vapply</span>(cran_packages, requireNamespace,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>                                     <span class="fu">logical</span>(<span class="dv">1</span>), <span class="at">quietly =</span> <span class="cn">TRUE</span>)]</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">length</span>(missing_cran)) <span class="fu">install.packages</span>(missing_cran)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">&quot;Rarr&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">&quot;BiocManager&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) <span class="fu">install.packages</span>(<span class="st">&quot;BiocManager&quot;</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">&quot;Rarr&quot;</span>, <span class="at">ask =</span> <span class="cn">FALSE</span>, <span class="at">update =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><code>terra</code>, <code>ncdf4</code> and <code>Rarr</code> support
+this automatic download workflow. <code>lutz</code> is needed only if
+you later request automatic local time zones. TaruWind is not yet on
+CRAN; use its locally installed package rather than
+<code>install.packages("taruwind")</code>.</p>
+<p>Now load the package and confirm which local version R is using:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(taruwind)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">packageVersion</span>(<span class="st">&quot;taruwind&quot;</span>)  <span class="co"># Expected: 0.1.0</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">find.package</span>(<span class="st">&quot;taruwind&quot;</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>?taruwind</span></code></pre></div>
+<h3 id="cds-access">CDS access</h3>
+<p>Follow the <a
+href="https://cds.climate.copernicus.eu/how-to-api">official CDS API
+setup instructions</a>. The package can read <code>~/.cdsapirc</code> or
+the <code>CDSAPIKEY</code> / <code>CDS_API_KEY</code> environment
+variable. Accept the applicable terms for the ERA5 single-level and
+monthly-mean datasets in your CDS account.</p>
+<p>Existing credentials may already be sufficient. <strong>Do not put
+your API key in scripts, GitHub or chat messages.</strong> DEM and
+WorldCover downloads do not require a CDS key. The package does not
+require Python.</p>
+<p>For the workflow below, these are the inputs and their sources:</p>
 <table>
 <colgroup>
 <col style="width: 33%" />
@@ -489,29 +505,21 @@ variable to see its full path. No files are deleted by this example.</p>
 <p>DEM values represent <strong>terrain elevation in metres</strong>.
 Roughness values represent <strong>aerodynamic z₀ in metres</strong>,
 not land-cover class identifiers.</p>
-<h3 id="r-dependencies">R dependencies</h3>
-<p>Check availability first; this command downloads nothing:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>needed <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;taruwind&quot;</span>, <span class="st">&quot;terra&quot;</span>, <span class="st">&quot;ncdf4&quot;</span>, <span class="st">&quot;Rarr&quot;</span>, <span class="st">&quot;lutz&quot;</span>)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">setNames</span>(<span class="fu">vapply</span>(needed, requireNamespace, <span class="fu">logical</span>(<span class="dv">1</span>), <span class="at">quietly =</span> <span class="cn">TRUE</span>), needed)</span></code></pre></div>
-<p>Install missing dependencies as needed:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run only for packages that are missing:</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">&quot;terra&quot;</span>, <span class="st">&quot;ncdf4&quot;</span>, <span class="st">&quot;lutz&quot;</span>))</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">&quot;BiocManager&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) <span class="fu">install.packages</span>(<span class="st">&quot;BiocManager&quot;</span>)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">&quot;Rarr&quot;</span>, <span class="at">ask =</span> <span class="cn">FALSE</span>, <span class="at">update =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
-<p><code>lutz</code> is needed only for automatic local time zones.
-TaruWind is not yet on CRAN; use the locally installed package rather
-than <code>install.packages("taruwind")</code>.</p>
-<h3 id="cds-access">CDS access</h3>
-<p>Follow the <a
-href="https://cds.climate.copernicus.eu/how-to-api">official CDS API
-setup instructions</a>. The package can read <code>~/.cdsapirc</code> or
-the <code>CDSAPIKEY</code> / <code>CDS_API_KEY</code> environment
-variable. Accept the applicable terms for the ERA5 single-level and
-monthly-mean datasets in your CDS account.</p>
-<p>Existing credentials may already be sufficient. <strong>Do not put
-your API key in scripts, GitHub or chat messages.</strong> DEM and
-WorldCover downloads do not require a CDS key. The package does not
-require Python.</p>
+<h2 id="define-our-istanbul-site-and-period">2. Define our Istanbul site
+and period</h2>
+<p>With the R packages and CDS access ready, define the location and
+requested hours once. All later steps use these same objects. Times are
+UTC and both endpoints are included: this request contains
+<strong>three</strong>, not two, hourly records.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>site <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">site_id =</span> <span class="st">&quot;istanbul_example&quot;</span>, <span class="at">lon =</span> <span class="fl">29.02</span>, <span class="at">lat =</span> <span class="fl">41.02</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>start_utc <span class="ot">=</span> <span class="st">&quot;2020-01-01 00:00:00&quot;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>end_utc <span class="ot">=</span> <span class="st">&quot;2020-01-01 02:00:00&quot;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>cache <span class="ot">=</span> <span class="fu">file.path</span>(tools<span class="sc">::</span><span class="fu">R_user_dir</span>(<span class="st">&quot;taruwind&quot;</span>, <span class="st">&quot;cache&quot;</span>), <span class="st">&quot;first-example&quot;</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>output_dir <span class="ot">=</span> <span class="fu">file.path</span>(<span class="fu">getwd</span>(), <span class="st">&quot;taruwind-istanbul-example&quot;</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(output_dir, <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
+<p><code>cache</code> holds reusable downloaded inputs;
+<code>output_dir</code> will hold our saved results. Print either
+variable to see its full path. No files are deleted by this example.</p>
 <h2 id="obtain-the-first-three-hours-at-our-site">3. Obtain the first
 three hours at our site</h2>
 <p>This example uses a terrain domain approximately 1 km wide.
@@ -698,7 +706,7 @@ endpoints are inclusive. This reused response still belongs to the
 <strong>990 m test domain</strong>. Reusing it does not enlarge the
 domain. Build a new response for a normal 30 km analysis.</p>
 <p>In another session, recreate <code>site</code>, <code>cache</code>
-and <code>output_dir</code> from Step 1, then load
+and <code>output_dir</code> from Step 2, then load
 <code>responses = readRDS(file.path(output_dir, "responses.rds"))</code>
 before running the <code>later</code> call. CSV does not preserve
 model/provenance attributes; use RDS for that purpose.</p>
@@ -912,7 +920,7 @@ function. Split larger requests into batches.</p>
 </tr>
 <tr class="even">
 <td>Missing R package</td>
-<td>Run the dependency check in Section 2</td>
+<td>Run the dependency check in Section 1</td>
 </tr>
 <tr class="odd">
 <td>Raster gaps / unknown class</td>
