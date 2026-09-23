@@ -84,8 +84,16 @@ from the wind period. See [taruwind_source_profile()].}
 \item{quiet}{Suppress download progress messages.}
 }
 \value{
-A tibble containing vector-bilinear ERA5 speed and TaruWind speed.
-  Prepared responses and input provenance are retained as attributes.
+A tibble (also a data frame) with one row per site-hour.
+  `wind_speed` is vector-bilinear ERA5 speed; `taruwind_speed` is the
+  downscaled speed. `attr(result, "responses")` is a named list of prepared
+  responses, one per site. `attr(result, "forcing_provenance")` records ERA5
+  source and interpolation metadata. These two attributes are separate
+  from the printed columns. The current ERA5 download metadata is also
+  forwarded as attributes, including `sites`, `source`, `license`,
+  `citation`, `retrieved_utc`, `wind_height_m`, `component_variables`,
+  `interpolation` and `cache_dir`. Inspect `names(attributes(result))` for
+  the complete set. `saveRDS()` retains attributes; CSV does not.
 }
 \description{
 Downloads ERA5 and (unless supplied) GLO-90. Roughness and source-profile

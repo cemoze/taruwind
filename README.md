@@ -102,8 +102,10 @@ response = taruwind_modal_prepare(
   depth = 900, source_z0 = 0.03
 )
 taruwind_modal_predict(response, u = c(3, 0), v = c(4, 0))
-# Speeds: 5 and 0 m/s on flat, homogeneous, matched-reference terrain.
 ```
+
+The two predicted speeds are 5 and 0 m/s on flat, homogeneous,
+matched-reference terrain.
 
 Rows run south to north. Coordinates are projected metres; roughness values
 are aerodynamic lengths in metres, not land-cover class codes. `source_z0`
@@ -127,21 +129,32 @@ georeferenced aerodynamic-length raster or explicitly `"worldcover"` to fetch
 ESA WorldCover 2021 and apply the documented WindKit lookup. WorldCover is
 not presented as a replacement for the study's CORINE-based inputs.
 
+This geographic example requires CDS credentials and acceptance of the
+relevant dataset terms. TaruWind obtains the documented reference profile
+automatically:
+
 ```r
-# Internet/CDS credentials and monthly-means dataset terms acceptance required.
-# The documented study reference profile is prepared automatically.
 wind = taruwind_downscale(
   lon = 29.02, lat = 41.02,
   period = c("2020-01-01", "2020-01-02"),
   roughness = "worldcover"
 )
-# Reuse response construction for another period:
 later = taruwind_downscale(
   lon = 29.02, lat = 41.02,
   period = c("2020-02-01", "2020-02-02"),
   responses = attr(wind, "responses")
 )
+class(wind)
+names(attributes(wind))
+names(attr(wind, "responses"))
 ```
+
+`wind` and `later` are tibbles, which also inherit from `data.frame`.
+The `responses` attribute is a named list of prepared responses for reuse;
+`forcing_provenance` records the ERA5 source. The HTML guide explains how to
+inspect and save both the rows and their attributes. Complete DEM/roughness
+rasters and four-node raw wind series are retrieved separately; they are not
+embedded in the printed prediction tibble.
 
 `sites` also accepts a data frame or matrix with `lon`/`lat` columns and an
 optional `site_id`. Output is a tibble; UTC is default, `local_tz = TRUE` adds

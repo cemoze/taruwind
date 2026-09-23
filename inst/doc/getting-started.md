@@ -53,10 +53,12 @@ Now load the package and confirm which local version R is using:
 
 ```r
 library(taruwind)
-packageVersion("taruwind")  # Expected: 0.1.0
+packageVersion("taruwind")
 find.package("taruwind")
 ?taruwind
 ```
+
+The package version shown here should be 0.1.0 for this guide.
 
 ### CDS access
 
@@ -121,6 +123,11 @@ wind = taruwind_downscale(
 wind[, c("timestamp_utc", "wind_speed", "taruwind_speed")]
 ```
 
+`wind` is a **tibble**, which is also an R data frame. Each printed row is
+one target and one hour. It additionally carries a prepared terrain response
+and forcing provenance as attributes; these do not appear among the printed
+columns. Section 5 shows exactly how to inspect them.
+
 The first call includes network access and potentially a CDS queue, so its
 elapsed time is not just solver time. Requesting three hours does not necessarily
 mean downloading a three-hour-sized file: provider chunks may be larger.
@@ -156,9 +163,11 @@ Inspect the example cache without deleting anything:
 ```r
 cache_info = taruwind_cache_info(cache)
 cache_info
-attr(cache_info, "total_bytes") / 1e6  # Total size in MB
+attr(cache_info, "total_bytes") / 1e6
 attr(cache_info, "cache_dir")
 ```
+
+The divided total is in megabytes; the cache directory is the path used above.
 
 An explicit persistent cache is retained after the call and after R restarts.
 The default session-temporary cache is normally removed when R closes, not
@@ -173,6 +182,44 @@ reads raster windows. A short wind period does not reduce these static inputs.
 
 The `wind` tibble now contains our three Istanbul records. The two speed
 columns are the input baseline and the model output, not two observation series.
+
+Inspect the object in layers, without printing its potentially large stored
+response:
+
+```r
+class(wind)
+nrow(wind)
+names(wind)
+names(attributes(wind))
+names(attr(wind, "responses"))
+prepared = attr(wind, "responses")[[site$site_id]]
+class(prepared)
+names(prepared)
+names(prepared$provenance)
+attr(wind, "responses")[[site$site_id]]$provenance$geographic$actual_domain_m
+attr(wind, "forcing_provenance")
+```
+
+`class(wind)` includes `tbl_df` and `data.frame`. `names(wind)` lists the
+ordinary data columns below. `names(attributes(wind))` also lists standard
+R data-frame attributes such as `names`, `row.names` and `class`. The current
+workflow carries these additional attributes:
+
+| Attribute | What it contains | Why keep it |
+|---|---|---|
+| `responses` | A named list with one prepared terrain response per site | Reuse it for later hours without rebuilding that site's terrain response |
+| `forcing_provenance` | Source, retrieval and interpolation metadata for ERA5 | Record which forcing produced the rows |
+| `sites`, `source`, `license`, `citation`, `retrieved_utc`, `wind_height_m`, `component_variables`, `interpolation`, `cache_dir` | Metadata forwarded from the ERA5 download result | Inspect the target and downloaded forcing |
+
+`prepared` is one `taruwind_modal_response` object. Its `matrix`, `surface`,
+`residual`, `iterations` and `provenance` components describe the reusable
+response; it is not another hourly data frame. For this quick check,
+`actual_domain_m` is 990 m. To discover a result's contents in R, start with
+`class()`, `names()` and `names(attributes())`; `?taruwind_downscale` documents
+the return value. An RDS file preserves both the columns and these attributes;
+CSV preserves only the columns. The result does not embed complete DEM or
+roughness rasters or all four raw ERA5 node series. The source files remain in
+the cache; Sections 5 and 8 show how to retrieve the nodes and aligned maps.
 
 | Column | Meaning |
 |---|---|
@@ -261,7 +308,7 @@ later = taruwind_downscale(
   period = c("2020-01-02", "2020-01-02"),
   responses = responses, cache_dir = cache
 )
-nrow(later)  # 24 hourly records for the same location
+nrow(later)
 saveRDS(later, file.path(output_dir, "following-day.rds"))
 ```
 
@@ -346,6 +393,19 @@ saveRDS(area, file.path(output_dir, "three-by-three-area.rds"))
 one TaruWind and one vector-bilinear ERA5 raster per hour. Inspect
 `area$grid$sites` for the exact output coordinates. The map is a grid of
 independently computed point estimates, not a single shared-domain flow solve.
+Unlike `wind`, **`area` is a list**, so inspect its named components with
+`names(area)`. Its `wind` component is a tibble, its `maps` component is a
+`terra::SpatRaster`, and its `grid` component describes cell locations and
+resolution:
+
+```r
+class(area)
+names(area)
+class(area$wind)
+class(area$maps)
+area$grid$sites
+```
+
 The 990 m terrain domains and nine coarse map cells demonstrate the software;
 use an appropriate terrain domain and output spacing for an analysis. The
 function defaults to at most 25 output cells and permits at most 100 by
@@ -355,22 +415,40 @@ You can export a raster with `terra::writeRaster(area$maps[[1]], filename)`.
 To save a PNG directly, supply a new filename to `taruwind_plot_map(...,
 file = "my-map.png")`; it will not overwrite an existing image.
 
-## Beyond the tutorial: enlarge this analysis deliberately
+## Optional next step: use the normal terrain domain
 
 Before interpreting this site scientifically, build a response with the normal
-domain. The following continuation uses our same site, dates and cache, but
-**constructs a new 30 km response** rather than reusing the 990 m software test.
-It is optional and can take substantially longer than the preceding steps.
+domain. This optional calculation uses the same site, hours and cache but
+**constructs a new approximately 30 km terrain response**. It can take
+substantially longer than the preceding steps.
 
 ```r
-# Optional next step; not needed to finish the quick first-use example.
-# analysis = taruwind_downscale(
-#   sites = site, start = start_utc, end = end_utc,
-#   roughness = "worldcover", domain_m = 30000, resolution = 90,
-#   workers = 1, cache_dir = cache
-# )
-# saveRDS(analysis, file.path(output_dir, "normal-domain-result.rds"))
+wind_30km = taruwind_downscale(
+  sites = site, start = start_utc, end = end_utc,
+  roughness = "worldcover", domain_m = 30000, resolution = 90,
+  workers = 1, cache_dir = cache
+)
+class(wind_30km)
+wind_30km[, c("timestamp_utc", "wind_speed", "taruwind_speed")]
+attr(wind_30km, "responses")[[site$site_id]]$provenance$geographic$actual_domain_m
+saveRDS(wind_30km, file.path(output_dir, "normal-domain-result.rds"))
 ```
+
+`wind_30km` has the **same tibble/data-frame structure** as `wind`; the
+different variable name does not create another result type. Their ERA5
+input hours and target are the same. The stored `responses` attribute shows
+which domain was used to construct each terrain response. Compare the two
+model series directly:
+
+```r
+data.frame(timestamp_utc = wind$timestamp_utc,
+           quick_check_speed = wind$taruwind_speed,
+           normal_domain_speed = wind_30km$taruwind_speed)
+```
+
+The earlier `wind` remains the 990 m software check; `wind_30km` is the
+separate normal-domain result. Saving either with `saveRDS()` keeps its
+columns and attributes for later inspection.
 
 ### Multiple sites, local time and 100 m winds
 
@@ -411,28 +489,14 @@ in the accompanying study.
 the source profile internally. Do not run a separate profile or raster setup
 unless you want to inspect inputs or supply your own data.
 
-### Supply existing files (template only, not a runnable tutorial)
+### Supply existing files
 
-Only use this alternative if you already have a georeferenced DEM, an
-**aerodynamic z₀ raster in metres**, and an ERA5 FSR NetCDF file. The filenames
-below are placeholders, not files bundled with TaruWind. All lines are commented
-out intentionally: replace the paths with real files before uncommenting them.
-
-```r
-# profile = taruwind_source_profile(
-#   lon = 29.02, lat = 41.02, fsr_file = "my-era5-fsr.nc"
-# )
-# op = taruwind_prepare_site(
-#   lon = 29.02, lat = 41.02,
-#   dem = "my-dem.tif", roughness = "my-aerodynamic-roughness.tif",
-#   depth = profile$depth, source_z0 = profile$source_z0
-# )
-# taruwind_predict(op, u = c(3, 4), v = c(1, 2))
-```
-
-These example u/v values represent components already interpolated to the
-target. You can apply your own component series while retaining the same
-geometric inputs. See `?taruwind_predict` for four-node matrices and weights.
+If you already have a georeferenced DEM and an **aerodynamic z₀ raster in
+metres**, pass those real raster objects or their real file paths as `dem`
+and `roughness` to `taruwind_downscale()`. It can still obtain the reference
+profile automatically. There are no placeholder files to copy or rename in
+this guide. See `?taruwind_prepare_site` for the lower-level input interface
+and `?taruwind_predict` for applying a prepared response to wind components.
 
 Rasters must cover the complete local domain. Convert CORINE class codes using
 an appropriate z₀ lookup before supplying them as roughness. Automatic CORINE

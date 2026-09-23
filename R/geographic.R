@@ -140,8 +140,16 @@ taruwind_site_layers <- function(lon,lat,roughness="worldcover",dem=NULL,
 #' @param profile_year Reference FSR climatology year; default 2021, not inferred
 #'   from the wind period. See [taruwind_source_profile()].
 #' @param profile_wait_seconds CDS queue polling limit per site/call.
-#' @return A tibble containing vector-bilinear ERA5 speed and TaruWind speed.
-#'   Prepared responses and input provenance are retained as attributes.
+#' @return A tibble (also a data frame) with one row per site-hour.
+#'   `wind_speed` is vector-bilinear ERA5 speed; `taruwind_speed` is the
+#'   downscaled speed. `attr(result, "responses")` is a named list of prepared
+#'   responses, one per site. `attr(result, "forcing_provenance")` records ERA5
+#'   source and interpolation metadata. These two attributes are separate
+#'   from the printed columns. The current ERA5 download metadata is also
+#'   forwarded as attributes, including `sites`, `source`, `license`,
+#'   `citation`, `retrieved_utc`, `wind_height_m`, `component_variables`,
+#'   `interpolation` and `cache_dir`. Inspect `names(attributes(result))` for
+#'   the complete set. `saveRDS()` retains attributes; CSV does not.
 #' @export
 taruwind_downscale <- function(sites=NULL,lon=NULL,lat=NULL,start=NULL,end=NULL,
     period=NULL,roughness=NULL,depth=NULL,source_z0=NULL,dem=NULL,
