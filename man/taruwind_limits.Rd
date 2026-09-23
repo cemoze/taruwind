@@ -15,7 +15,10 @@ local terrain domains, not accidental continental raster production. These
 conservative limits are checked before network or DEM work starts. Advanced
 users of [taruwind_download_era5()] can explicitly opt out with
 `allow_large = TRUE`. The main [taruwind_downscale()] workflow does not expose
-this override; split larger requests into recoverable batches. Terrain-cell
+this override; split larger requests into recoverable batches.
+A point or raw ERA5 request is limited to ten calendar years per call.
+Local area maps are limited to 168 hourly timestamps (seven days). Longer
+series can be built in batches with reusable prepared responses. Terrain-cell
 limits count the reflected computational grid, not just the output square.
 They do not estimate network bytes or guarantee that a large request will fit
 in memory.

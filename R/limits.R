@@ -5,7 +5,10 @@
 #' conservative limits are checked before network or DEM work starts. Advanced
 #' users of [taruwind_download_era5()] can explicitly opt out with
 #' `allow_large = TRUE`. The main [taruwind_downscale()] workflow does not expose
-#' this override; split larger requests into recoverable batches. Terrain-cell
+#' this override; split larger requests into recoverable batches.
+#' A point or raw ERA5 request is limited to ten calendar years per call.
+#' Local area maps are limited to 168 hourly timestamps (seven days). Longer
+#' series can be built in batches with reusable prepared responses. Terrain-cell
 #' limits count the reflected computational grid, not just the output square.
 #' They do not estimate network bytes or guarantee that a large request will fit
 #' in memory.
@@ -17,6 +20,8 @@ taruwind_limits <- function() {
     supported_era5_wind_heights_m = c(10L, 100L),
     max_sites = 100L,
     max_site_hours = 1e7,
+    max_years_per_request = 10L,
+    max_area_hours = 168L,
     max_cells_per_site = 2e6,
     max_total_terrain_cells = 6e7
   )
@@ -24,6 +29,12 @@ taruwind_limits <- function() {
 
 .taruwind_request_hours <- function(period) {
   as.numeric(difftime(period$end, period$start, units = "hours")) + 1
+}
+
+.taruwind_calendar_year_limit <- function(start, years) {
+  boundary <- as.POSIXlt(start, tz = "UTC")
+  boundary$year <- boundary$year + years
+  as.POSIXct(boundary, tz = "UTC")
 }
 
 .taruwind_guard_request <- function(
@@ -46,6 +57,11 @@ taruwind_limits <- function() {
              " site-hours > ",
              format(limits$max_site_hours, scientific = FALSE, trim = TRUE))
     )
+  }
+  if (period$end >= .taruwind_calendar_year_limit(
+      period$start, limits$max_years_per_request)) {
+    issues <- c(issues, paste0("requested period exceeds ",
+      limits$max_years_per_request, " calendar years per call"))
   }
   if (!is.null(resolution) && !is.null(domain_km)) {
     if (!is.numeric(resolution) || length(resolution) != 1L ||

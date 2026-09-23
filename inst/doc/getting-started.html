@@ -859,7 +859,17 @@ describes cell locations and resolution:</p>
 software; use an appropriate terrain domain and output spacing for an
 analysis. The function defaults to at most 25 output cells and permits
 at most 100 by explicitly raising <code>max_cells</code>; work scales
-with the number of cells.</p>
+with the number of cells. An area call is also limited to 168 hourly
+timestamps (seven days). For the next period, reuse the nine prepared
+responses instead of solving terrain again:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>area_next <span class="ot">=</span> <span class="fu">taruwind_downscale_area</span>(</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">lon =</span> site<span class="sc">$</span>lon, <span class="at">lat =</span> site<span class="sc">$</span>lat,</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">start =</span> <span class="st">&quot;2020-01-01 03:00:00&quot;</span>, <span class="at">end =</span> <span class="st">&quot;2020-01-01 05:00:00&quot;</span>,</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">area_m =</span> <span class="dv">990</span>, <span class="at">map_resolution =</span> <span class="dv">500</span>,</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">domain_m =</span> <span class="dv">990</span>, <span class="at">resolution =</span> <span class="dv">90</span>,</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">responses =</span> <span class="fu">attr</span>(area<span class="sc">$</span>wind, <span class="st">&quot;responses&quot;</span>),</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">cache_dir =</span> cache</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <p>You can export a raster with
 <code>terra::writeRaster(area$maps[[1]], filename)</code>. To save a PNG
 directly, supply a new filename to
@@ -872,24 +882,24 @@ the normal domain. This optional calculation uses the same site, hours
 and cache but <strong>constructs a new approximately 30 km terrain
 response</strong>. It can take substantially longer than the preceding
 steps.</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>wind_30km <span class="ot">=</span> <span class="fu">taruwind_downscale</span>(</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">sites =</span> site, <span class="at">start =</span> start_utc, <span class="at">end =</span> end_utc,</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">roughness =</span> <span class="st">&quot;worldcover&quot;</span>, <span class="at">domain_m =</span> <span class="dv">30000</span>, <span class="at">resolution =</span> <span class="dv">90</span>,</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">workers =</span> <span class="dv">1</span>, <span class="at">cache_dir =</span> cache</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(wind_30km)</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>wind_30km[, <span class="fu">c</span>(<span class="st">&quot;timestamp_utc&quot;</span>, <span class="st">&quot;wind_speed&quot;</span>, <span class="st">&quot;taruwind_speed&quot;</span>)]</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(wind_30km, <span class="st">&quot;responses&quot;</span>)[[site<span class="sc">$</span>site_id]]<span class="sc">$</span>provenance<span class="sc">$</span>geographic<span class="sc">$</span>actual_domain_m</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(wind_30km, <span class="fu">file.path</span>(output_dir, <span class="st">&quot;normal-domain-result.rds&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>wind_30km <span class="ot">=</span> <span class="fu">taruwind_downscale</span>(</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">sites =</span> site, <span class="at">start =</span> start_utc, <span class="at">end =</span> end_utc,</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">roughness =</span> <span class="st">&quot;worldcover&quot;</span>, <span class="at">domain_m =</span> <span class="dv">30000</span>, <span class="at">resolution =</span> <span class="dv">90</span>,</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">workers =</span> <span class="dv">1</span>, <span class="at">cache_dir =</span> cache</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(wind_30km)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>wind_30km[, <span class="fu">c</span>(<span class="st">&quot;timestamp_utc&quot;</span>, <span class="st">&quot;wind_speed&quot;</span>, <span class="st">&quot;taruwind_speed&quot;</span>)]</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(wind_30km, <span class="st">&quot;responses&quot;</span>)[[site<span class="sc">$</span>site_id]]<span class="sc">$</span>provenance<span class="sc">$</span>geographic<span class="sc">$</span>actual_domain_m</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(wind_30km, <span class="fu">file.path</span>(output_dir, <span class="st">&quot;normal-domain-result.rds&quot;</span>))</span></code></pre></div>
 <p><code>wind_30km</code> has the <strong>same tibble/data-frame
 structure</strong> as <code>wind</code>; the different variable name
 does not create another result type. Their ERA5 input hours and target
 are the same. The stored <code>responses</code> attribute shows which
 domain was used to construct each terrain response. Compare the two
 model series directly:</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">timestamp_utc =</span> wind<span class="sc">$</span>timestamp_utc,</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>           <span class="at">quick_check_speed =</span> wind<span class="sc">$</span>taruwind_speed,</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">normal_domain_speed =</span> wind_30km<span class="sc">$</span>taruwind_speed)</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">timestamp_utc =</span> wind<span class="sc">$</span>timestamp_utc,</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>           <span class="at">quick_check_speed =</span> wind<span class="sc">$</span>taruwind_speed,</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">normal_domain_speed =</span> wind_30km<span class="sc">$</span>taruwind_speed)</span></code></pre></div>
 <p>The earlier <code>wind</code> remains the 990 m software check;
 <code>wind_30km</code> is the separate normal-domain result. Saving
 either with <code>saveRDS()</code> keeps its columns and attributes for
@@ -900,16 +910,16 @@ time and 100 m winds</h3>
 our first site. Keep the original identifier and add the second
 coordinate. This optional example keeps the same short period and small
 software-test domain:</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>sites <span class="ot">=</span> <span class="fu">rbind</span>(site, <span class="fu">data.frame</span>(<span class="at">site_id =</span> <span class="st">&quot;istanbul_neighbour&quot;</span>,</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                              <span class="at">lon =</span> site<span class="sc">$</span>lon <span class="sc">+</span> <span class="fl">0.02</span>, <span class="at">lat =</span> site<span class="sc">$</span>lat <span class="sc">+</span> <span class="fl">0.02</span>))</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>network <span class="ot">=</span> <span class="fu">taruwind_downscale</span>(</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">sites =</span> sites, <span class="at">start =</span> start_utc, <span class="at">end =</span> end_utc,</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">domain_m =</span> <span class="dv">990</span>, <span class="at">resolution =</span> <span class="dv">90</span>,</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">roughness =</span> <span class="st">&quot;worldcover&quot;</span>, <span class="at">workers =</span> <span class="st">&quot;auto&quot;</span>, <span class="at">local_tz =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">cache_dir =</span> cache</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>network[, <span class="fu">c</span>(<span class="st">&quot;site_id&quot;</span>, <span class="st">&quot;timestamp_utc&quot;</span>, <span class="st">&quot;wind_speed&quot;</span>, <span class="st">&quot;taruwind_speed&quot;</span>)]</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(network, <span class="fu">file.path</span>(output_dir, <span class="st">&quot;two-site-result.rds&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>sites <span class="ot">=</span> <span class="fu">rbind</span>(site, <span class="fu">data.frame</span>(<span class="at">site_id =</span> <span class="st">&quot;istanbul_neighbour&quot;</span>,</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                              <span class="at">lon =</span> site<span class="sc">$</span>lon <span class="sc">+</span> <span class="fl">0.02</span>, <span class="at">lat =</span> site<span class="sc">$</span>lat <span class="sc">+</span> <span class="fl">0.02</span>))</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>network <span class="ot">=</span> <span class="fu">taruwind_downscale</span>(</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">sites =</span> sites, <span class="at">start =</span> start_utc, <span class="at">end =</span> end_utc,</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">domain_m =</span> <span class="dv">990</span>, <span class="at">resolution =</span> <span class="dv">90</span>,</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">roughness =</span> <span class="st">&quot;worldcover&quot;</span>, <span class="at">workers =</span> <span class="st">&quot;auto&quot;</span>, <span class="at">local_tz =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">cache_dir =</span> cache</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>network[, <span class="fu">c</span>(<span class="st">&quot;site_id&quot;</span>, <span class="st">&quot;timestamp_utc&quot;</span>, <span class="st">&quot;wind_speed&quot;</span>, <span class="st">&quot;taruwind_speed&quot;</span>)]</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(network, <span class="fu">file.path</span>(output_dir, <span class="st">&quot;two-site-result.rds&quot;</span>))</span></code></pre></div>
 <p>Expect six rows: two sites times three hours. This constructs
 responses for both targets; it does not implicitly reuse the earlier
 <code>responses</code> object. For normal analysis use 30 km domains as
@@ -970,30 +980,31 @@ maximum of 16, further limited by the number of sites and memory guards.
 parts.</strong> Data preparation is sequential; independent numerical
 solves run in parallel.</li>
 </ul>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(wind, <span class="st">&quot;responses&quot;</span>)[[<span class="dv">1</span>]]<span class="sc">$</span>provenance</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(wind, <span class="st">&quot;forcing_provenance&quot;</span>)</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_limits</span>()</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_workers</span>(<span class="at">n_sites =</span> <span class="dv">10</span>)</span></code></pre></div>
-<p>The automatic point workflow allows up to 100 sites and 10 million
-site-hours. Reflected solves are limited to 2 million computational
-cells per site and 60 million cells across a request. These cells
-include the solver’s reflected grid, not just the visible local square.
-The local-area workflow defaults to 25 output cells and permits at most
-100 when <code>max_cells</code> is raised explicitly.
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(wind, <span class="st">&quot;responses&quot;</span>)[[<span class="dv">1</span>]]<span class="sc">$</span>provenance</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(wind, <span class="st">&quot;forcing_provenance&quot;</span>)</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_limits</span>()</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="fu">taruwind_workers</span>(<span class="at">n_sites =</span> <span class="dv">10</span>)</span></code></pre></div>
+<p>The automatic point workflow allows up to ten calendar years per
+call, 100 sites and 10 million site-hours. Reflected solves are limited
+to 2 million computational cells per site and 60 million cells across a
+request. These cells include the solver’s reflected grid, not just the
+visible local square. The local-area workflow defaults to 25 output
+cells and permits at most 100 when <code>max_cells</code> is raised
+explicitly; its period is limited to 168 hourly timestamps (seven days).
 <code>allow_large</code> belongs to the separate ERA5 download helper,
 not the main <code>taruwind_downscale()</code> function. Split larger
 requests into batches.</p>
-<p>There is no fixed maximum number of days or years per site. The
-site-hour limit depends on the number of sites. Requests before 1940,
-after the current UTC time, or outside the hours currently present in
-the CDS ARCO record stop with errors. The source commonly trails real
-time by several days, but no fixed lag is assumed: TaruWind checks the
-actual time axis before downloading terrain or requesting a source
-profile. By default, mutable metadata is refreshed once per day; use
-<code>refresh = "always"</code> to check the latest source state
-immediately. The package does not impose a network-byte quota or promise
-that a request below its safety limits will be fast or fit in
-memory.</p>
+<p>The site-hour limit still depends on the number of sites. Longer
+point series and area-map periods can be processed in consecutive
+batches with reusable responses. Requests before 1940, after the current
+UTC time, or outside the hours currently present in the CDS ARCO record
+stop with errors. The source commonly trails real time by several days,
+but no fixed lag is assumed: TaruWind checks the actual time axis before
+downloading terrain or requesting a source profile. By default, mutable
+metadata is refreshed once per day; use <code>refresh = "always"</code>
+to check the latest source state immediately. The package does not
+impose a network-byte quota or promise that a request below its safety
+limits will be fast or fit in memory.</p>
 <h2 id="reference-troubleshooting">Reference: troubleshooting</h2>
 <table>
 <colgroup>
@@ -1061,11 +1072,11 @@ direction/u/v or CERRA downloads. Linux, Windows and macOS package
 checks passed in GitHub Actions run 35756209012 on 22 September 2026.
 Live data integration was additionally checked on Linux; the platform
 checks do not download environmental datasets.</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>?taruwind_downscale</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>?taruwind_prepare_site</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>?taruwind_predict</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="fu">help</span>(<span class="at">package =</span> <span class="st">&quot;taruwind&quot;</span>)</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">browseURL</span>(<span class="fu">system.file</span>(<span class="st">&quot;doc&quot;</span>, <span class="st">&quot;getting-started.html&quot;</span>, <span class="at">package =</span> <span class="st">&quot;taruwind&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>?taruwind_downscale</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>?taruwind_prepare_site</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>?taruwind_predict</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="fu">help</span>(<span class="at">package =</span> <span class="st">&quot;taruwind&quot;</span>)</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="fu">browseURL</span>(<span class="fu">system.file</span>(<span class="st">&quot;doc&quot;</span>, <span class="st">&quot;getting-started.html&quot;</span>, <span class="at">package =</span> <span class="st">&quot;taruwind&quot;</span>))</span></code></pre></div>
 <p>In short: <strong>start with one site, understand the output, save
 the response, then scale up.</strong></p>
 </body>

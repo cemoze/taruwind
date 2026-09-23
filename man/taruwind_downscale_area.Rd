@@ -23,6 +23,7 @@ taruwind_downscale_area(
   cache_dir = file.path(tempdir(), "taruwind-cache"),
   api_key = NULL,
   workers = "auto",
+  responses = NULL,
   profile_year = 2021,
   profile_wait_seconds = 60,
   refresh = c("auto", "always", "never"),
@@ -68,6 +69,9 @@ interactive use so the secret does not appear in scripts.}
 \item{workers}{"auto" (half the detected cores, capped at 16 and site count),
 or an integer from 1 to 16; the memory guard may reduce concurrency.}
 
+\item{responses}{Optional named list of prepared geographic responses from
+a previous call, indexed by site_id. Coordinates and heights are checked.}
+
 \item{profile_year}{Reference FSR climatology year; default 2021, not inferred
 from the wind period. See [taruwind_source_profile()].}
 
@@ -92,4 +96,7 @@ single shared-domain flow solve. Work therefore grows with cell count.
 The square output grid is centred on `lon, lat` and rounded to an odd
 number of cells so that one cell represents the centre exactly. Its spacing
 (`map_resolution`) is independent of the terrain grid spacing (`resolution`).
+A call may cover at most 168 hourly timestamps (seven complete UTC days).
+For longer periods, make consecutive calls and reuse the prepared responses
+from `attr(previous$wind, "responses")`.
 }

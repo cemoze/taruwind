@@ -6,6 +6,9 @@
 #' The square output grid is centred on `lon, lat` and rounded to an odd
 #' number of cells so that one cell represents the centre exactly. Its spacing
 #' (`map_resolution`) is independent of the terrain grid spacing (`resolution`).
+#' A call may cover at most 168 hourly timestamps (seven complete UTC days).
+#' For longer periods, make consecutive calls and reuse the prepared responses
+#' from `attr(previous$wind, "responses")`.
 #'
 #' @param lon,lat Centre coordinates in decimal degrees.
 #' @param start,end,period UTC period, as in [taruwind_downscale()].
@@ -25,7 +28,7 @@ taruwind_downscale_area <- function(lon,lat,start=NULL,end=NULL,period=NULL,
     roughness="worldcover",depth=NULL,source_z0=NULL,dem=NULL,
     resolution=90,domain_m=30000,wind_height=10,
     cache_dir=file.path(tempdir(),"taruwind-cache"),api_key=NULL,
-    workers="auto",profile_year=2021,profile_wait_seconds=60,
+    workers="auto",responses=NULL,profile_year=2021,profile_wait_seconds=60,
     refresh=c("auto","always","never"),quiet=FALSE) {
   .taruwind_require("terra","area downscaling")
   centre <- .taruwind_sites(lon=lon,lat=lat)
@@ -40,6 +43,13 @@ taruwind_downscale_area <- function(lon,lat,start=NULL,end=NULL,period=NULL,
   n <- max(1,2*ceiling((area_m/map_resolution-1)/2)+1)
   if(n*n>max_cells) stop("Output map has ",n*n,
     " cells; increase map_resolution, reduce area_m, or explicitly raise max_cells")
+  when <- .taruwind_resolve_period(start,end,period)
+  hours <- .taruwind_request_hours(when)
+  max_hours <- taruwind_limits()$max_area_hours
+  if(hours>max_hours) stop("Local area maps are limited to ",max_hours,
+    " hourly timestamps (seven days) per call; requested ",hours,
+    ". Split the period and reuse prepared responses from a previous area result.",
+    call.=FALSE)
   local_crs <- sprintf("+proj=aeqd +lat_0=%.10f +lon_0=%.10f +datum=WGS84 +units=m",lat,lon)
   half <- n*map_resolution/2
   template <- terra::rast(nrows=n,ncols=n,xmin=-half,xmax=half,
@@ -48,10 +58,10 @@ taruwind_downscale_area <- function(lon,lat,start=NULL,end=NULL,period=NULL,
   coordinates <- terra::crds(terra::project(terra::vect(xy,crs=local_crs),"EPSG:4326"))
   sites <- data.frame(site_id=sprintf("cell_%03d",seq_len(nrow(coordinates))),
     lon=coordinates[,1],lat=coordinates[,2])
-  wind <- taruwind_downscale(sites=sites,start=start,end=end,period=period,
+  wind <- taruwind_downscale(sites=sites,start=when$start,end=when$end,
     roughness=roughness,depth=depth,source_z0=source_z0,dem=dem,
     resolution=resolution,domain_m=domain_m,wind_height=wind_height,
-    cache_dir=cache_dir,api_key=api_key,workers=workers,
+    cache_dir=cache_dir,api_key=api_key,workers=workers,responses=responses,
     profile_year=profile_year,profile_wait_seconds=profile_wait_seconds,
     refresh=refresh,quiet=quiet)
   timestamps <- sort(unique(wind$timestamp_utc))

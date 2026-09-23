@@ -410,7 +410,20 @@ area$grid$sites
 The 990 m terrain domains and nine coarse map cells demonstrate the software;
 use an appropriate terrain domain and output spacing for an analysis. The
 function defaults to at most 25 output cells and permits at most 100 by
-explicitly raising `max_cells`; work scales with the number of cells.
+explicitly raising `max_cells`; work scales with the number of cells. An area
+call is also limited to 168 hourly timestamps (seven days). For the next
+period, reuse the nine prepared responses instead of solving terrain again:
+
+```r
+area_next = taruwind_downscale_area(
+  lon = site$lon, lat = site$lat,
+  start = "2020-01-01 03:00:00", end = "2020-01-01 05:00:00",
+  area_m = 990, map_resolution = 500,
+  domain_m = 990, resolution = 90,
+  responses = attr(area$wind, "responses"),
+  cache_dir = cache
+)
+```
 
 You can export a raster with `terra::writeRaster(area$maps[[1]], filename)`.
 To save a PNG directly, supply a new filename to `taruwind_plot_map(...,
@@ -535,16 +548,19 @@ taruwind_limits()
 taruwind_workers(n_sites = 10)
 ```
 
-The automatic point workflow allows up to 100 sites and 10 million site-hours.
+The automatic point workflow allows up to ten calendar years per call, 100
+sites and 10 million site-hours.
 Reflected solves are limited to 2 million computational cells per site and
 60 million cells across a request. These cells include the solver's reflected
 grid, not just the visible local square. The local-area workflow defaults to
-25 output cells and permits at most 100 when `max_cells` is raised explicitly.
+25 output cells and permits at most 100 when `max_cells` is raised explicitly;
+its period is limited to 168 hourly timestamps (seven days).
 `allow_large` belongs to the separate ERA5 download helper, not the main
 `taruwind_downscale()` function. Split larger requests into batches.
 
-There is no fixed maximum number of days or years per site. The site-hour
-limit depends on the number of sites. Requests before 1940, after the current
+The site-hour limit still depends on the number of sites. Longer point series
+and area-map periods can be processed in consecutive batches with reusable
+responses. Requests before 1940, after the current
 UTC time, or outside the hours currently present in the CDS ARCO record stop
 with errors. The source commonly trails real time by several days, but no
 fixed lag is assumed: TaruWind checks the actual time axis before downloading

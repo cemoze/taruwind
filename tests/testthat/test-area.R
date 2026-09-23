@@ -28,9 +28,9 @@ test_that("area output keeps each target and hour in its raster cell", {
   terra::values(dem) = 0
   rough = dem*0 + .03
   local_mocked_bindings(.taruwind_era5_axis=function(...) NULL,
-    .taruwind_download_era5_ready=function(target,...) {
-    time = as.POSIXct(c("2020-01-01 00:00:00","2020-01-01 01:00:00"),tz="UTC")
-    data = target[rep(seq_len(nrow(target)),each=2),]
+    .taruwind_download_era5_ready=function(target,period,...) {
+    time = seq(period$start,period$end,by="hour")
+    data = target[rep(seq_len(nrow(target)),each=length(time)),]
     data$timestamp_utc = rep(time,nrow(target))
     data$u = seq_len(nrow(data))
     data$v = 0
@@ -48,6 +48,15 @@ test_that("area output keeps each target and hour in its raster cell", {
                seq(1,17,by=2))
   expect_equal(terra::values(result$maps[["taruwind_20200101T000000Z"]],mat=FALSE),
                seq(1,17,by=2),tolerance=1e-6)
+  reused = taruwind_downscale_area(29,41,
+    start="2020-01-02 00:00:00",end="2020-01-02 01:00:00",
+    area_m=990,map_resolution=500,responses=attr(result$wind,"responses"),
+    domain_m=450,quiet=TRUE)
+  expect_equal(reused$wind$taruwind_speed,result$wind$taruwind_speed)
+  expect_true("taruwind_20200102T000000Z" %in% names(reused$maps))
   expect_error(taruwind_downscale_area(29,41,area_m=2000,map_resolution=100),
                "Output map has")
+  expect_error(taruwind_downscale_area(29,41,
+    period=c("2020-01-01","2020-01-08"),area_m=990,map_resolution=500),
+    "168 hourly timestamps")
 })

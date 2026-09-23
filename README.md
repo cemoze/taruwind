@@ -51,12 +51,17 @@ the default cache is session-temporary.
 Requests must start in 1940 or later, end no later than the current UTC time,
 and use complete hourly timestamps. The actual latest available ERA5 hour is
 checked against the CDS ARCO time axis before terrain or source-profile work;
-there is no hard-coded five- or seven-day cutoff. If cached metadata is behind
-the source, use `refresh = "always"`. The automatic workflow allows up to 100
-sites and 10 million site-hours, plus reflected terrain-grid limits; inspect
-`taruwind_limits()`. These are safety guards, not an estimate or guarantee of
-network bytes, runtime or peak memory. Oversized requests stop with an error
-and should be split into recoverable batches.
+there is no hard-coded five- or seven-day availability lag. If cached metadata is behind
+the source, use `refresh = "always"`. Each automatic downscaling request is
+limited to ten calendar years, at most 100 sites and 10 million site-hours,
+plus reflected terrain-grid limits. Local area maps have an additional
+seven-day (168-hour) limit; reuse `attr(area$wind, "responses")` when batching
+consecutive weeks.
+Inspect `taruwind_limits()` for all thresholds. These are safety guards, not
+an estimate or guarantee of network bytes, runtime or peak memory. Oversized
+requests stop with an error and should be split into recoverable batches. The
+standalone ERA5 download helper retains its deliberate `allow_large = TRUE`
+override.
 
 `wind_speed` in the geographic output is **vector-bilinear ERA5**;
 `taruwind_speed` is the final downscaled speed, both in m/s. The `u`/`v`

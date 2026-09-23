@@ -6,6 +6,9 @@ test_that("UTC dates retain inclusive hourly boundaries", {
   expect_error(.taruwind_period("1939-12-31","1940-01-01"),"before 1940")
   expect_error(.taruwind_period("2999-01-01","2999-01-02"),"future")
   expect_equal(.taruwind_request_hours(p),24)
+  expect_equal(.taruwind_request_hours(
+    .taruwind_period("2020-01-01","2020-01-07")),
+    taruwind_limits()$max_area_hours)
 })
 
 test_that("dynamic ERA5 availability checks every requested hour", {
@@ -30,6 +33,17 @@ test_that("request guard counts reflected terrain and rejects excessive networks
     allow_override=FALSE),"total reflected computational cells")
   expect_error(.taruwind_guard_request(small,p,resolution=0,domain_km=30),
     "positive finite")
+})
+
+test_that("automatic requests are bounded by ten calendar years", {
+  site = data.frame(site_id="one")
+  ten_years = .taruwind_period("2016-01-01","2025-12-31")
+  too_long = .taruwind_period("2016-01-01","2026-01-01")
+  expect_silent(.taruwind_guard_request(site,ten_years))
+  expect_error(.taruwind_guard_request(site,too_long,allow_override=FALSE),
+    "10 calendar years")
+  expect_warning(.taruwind_guard_request(site,too_long,allow_large=TRUE),
+    "10 calendar years")
 })
 
 test_that("the main workflow checks ERA5 availability before terrain or profiles", {

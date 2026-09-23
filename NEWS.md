@@ -14,6 +14,8 @@ First public-version candidate, not yet published.
   a base-R map plotting helper.
 - Fail-fast ERA5 time-axis checks before terrain work, request-size reporting,
   and enforced reflected-grid limits for multi-site workflows.
+- Ten-calendar-year point-request and seven-day local-map limits, with reusable
+  area responses for consecutive batches.
 - Linux, Windows and macOS package checks in the private GitHub repository.
 - Automatic latitude-based neutral depth and resumable CDS FSR reference
   acquisition, with an explicit diagnostic convention and provenance.
