@@ -14,6 +14,16 @@ library(taruwind)
 browseURL(system.file("doc", "getting-started.html", package = "taruwind"))
 ```
 
+The HTML guide has a **Copy code** button on each example; long lines wrap to
+fit the window. To regenerate it from the Markdown source while retaining
+those controls, run this from the package source directory:
+
+```sh
+pandoc inst/doc/getting-started.md --standalone --toc \
+  --include-in-header=tools/guide-ui.html \
+  -o inst/doc/getting-started.html
+```
+
 Start with **`taruwind_downscale()`** when you have coordinates and a period.
 You do not need to call all exported functions in sequence.
 
