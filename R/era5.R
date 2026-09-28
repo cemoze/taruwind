@@ -337,15 +337,20 @@ print.taruwind_era5 <- function(x, ...) {
     if (is.null(lon) || is.null(lat)) stop("lon and lat must be supplied")
     site_id <- names(lon)
   }
-  lon <- as.numeric(lon); lat <- as.numeric(lat)
+  # Factor codes are not geographic coordinates; convert their labels first.
+  if (is.factor(lon)) lon <- as.character(lon)
+  if (is.factor(lat)) lat <- as.character(lat)
+  lon <- suppressWarnings(as.numeric(lon)); lat <- suppressWarnings(as.numeric(lat))
   if (!length(lon) || length(lon) != length(lat) ||
       any(!is.finite(lon)) || any(!is.finite(lat)) ||
       any(lon < -180 | lon > 180) || any(lat < -90 | lat > 90)) {
     stop("lon and lat must be equal-length finite coordinates in valid ranges")
   }
-  if (is.null(site_id) || length(site_id) != length(lon) || any(!nzchar(site_id))) {
+  if (is.null(site_id)) {
     site_id <- paste0("site_", seq_along(lon))
   }
+  if (length(site_id) != length(lon) || anyNA(site_id) ||
+      any(!nzchar(trimws(site_id)))) stop("site identifiers must be non-missing and non-empty")
   if (anyDuplicated(site_id)) stop("site identifiers must be unique")
   data.frame(site_id = site_id, lon = lon, lat = lat, stringsAsFactors = FALSE)
 }
@@ -468,10 +473,14 @@ print.taruwind_era5 <- function(x, ...) {
   if (identical(local_tz, TRUE)) {
     .taruwind_require("lutz", "coordinate-based local time-zone lookup")
     zones <- lutz::tz_lookup_coords(sites$lat, sites$lon, method = "fast", warn = FALSE)
-  } else if (is.character(local_tz) && length(local_tz) == 1L && nzchar(local_tz)) {
+  } else if (is.character(local_tz) && length(local_tz) == 1L &&
+             !is.na(local_tz) && nzchar(local_tz)) {
     zones <- rep(local_tz, nrow(sites))
   } else {
     stop("local_tz must be FALSE, TRUE, or one Olson/IANA time-zone string")
+  }
+  if (anyNA(zones) || any(!zones %in% c("UTC", "GMT", OlsonNames()))) {
+    stop("A valid Olson/IANA time zone is required for every site; use local_tz = FALSE for UTC")
   }
   zone_map <- stats::setNames(zones, sites$site_id)
   data$time_zone <- unname(zone_map[data$site_id])

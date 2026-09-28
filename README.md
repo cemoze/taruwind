@@ -195,8 +195,10 @@ geographic workflow is a new input-grid convenience layer, not a byte-for-byte
 reproduction of the archived study grids. The current solver itself is unchanged.
 
 The `.github/workflows/R-CMD-check.yaml` workflow checks Linux, Windows and
-macOS. All three completed with `Status: OK` in GitHub Actions run
-35756209012 (22 September 2026). These checks cover package installation,
+macOS. All three completed with `Status: OK` for the base source snapshot in
+GitHub Actions run 35756209012 (22 September 2026). The input-validation
+correction in this candidate has passed local Linux checks; its exact source
+has not yet had hosted Windows/macOS checks. Package checks cover installation,
 offline examples and tests, not live downloading on every platform.
 
 The model is neutral and diagnostic; separation, thermal circulations and

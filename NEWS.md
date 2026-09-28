@@ -2,6 +2,10 @@
 
 First public-version candidate, not yet published.
 
+- Review candidate fixes: factor-coordinate labels are parsed as coordinates;
+  missing/blank site identifiers and unknown local time zones are rejected.
+  No physical solver or numeric prediction formula changed.
+
 - Six-mode neutral terrain response and exact-fetch surface memory.
 - Explicit metric-grid preparation and reusable time-series prediction.
 - Input validation and numerical regression tests.
@@ -16,7 +20,10 @@ First public-version candidate, not yet published.
   and enforced reflected-grid limits for multi-site workflows.
 - Ten-calendar-year point-request and seven-day local-map limits, with reusable
   area responses for consecutive batches.
-- Linux, Windows and macOS package checks in the private GitHub repository.
+- The base source snapshot passed Linux, Windows and macOS package checks in
+  the private GitHub repository. This input-validation correction has been
+  checked locally on Linux; its exact source has not yet had hosted
+  Windows/macOS checks.
 - Automatic latitude-based neutral depth and resumable CDS FSR reference
   acquisition, with an explicit diagnostic convention and provenance.
 

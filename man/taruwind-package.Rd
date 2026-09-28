@@ -6,11 +6,16 @@
 \alias{taruwind-package}
 \title{TaruWind: reduced-mode terrain and surface wind downscaling}
 \description{
-Start with [taruwind_downscale()] for coordinates and a period, or
-[taruwind_build()] and [taruwind_predict()] for metric-grid inputs.
-Open the installed step-by-step guide using
+New to TaruWind? \href{../doc/getting-started.html}{Click here to open the
+complete HTML getting-started guide}. It walks through one connected
+example, from coordinates and downloads to interpreting the result.
+}
+\details{
+Start with \code{\link{taruwind_downscale}} for coordinates and a period,
+or \code{\link{taruwind_build}} and \code{\link{taruwind_predict}} for
+metric-grid inputs.
+If the help viewer does not open the link, run
 \code{browseURL(system.file("doc", "getting-started.html", package = "taruwind"))}.
-It covers first examples, downloads, output columns, response reuse and limits.
 }
 \author{
 \strong{Maintainer}: Cem Özen \email{ozenc@itu.edu.tr}
