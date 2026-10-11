@@ -27,8 +27,6 @@ Description: Constructs reusable local wind responses using a neutral
     profile. Prepared responses can be applied to wind-component time series
     without target-site wind calibration. This diagnostic approximation does
     not resolve turbulence or guarantee conservation of the final field.
-    Background on mass-consistent wind adjustment is provided by
-    Ratto et al. (1994) <doi:10.1016/0266-9838(94)90023-X>.
 License: MIT + file LICENSE
 Copyright: See inst/COPYRIGHTS for bundled third-party components.
 Encoding: UTF-8

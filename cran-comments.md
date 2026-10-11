@@ -2,10 +2,11 @@
 
 This resubmission addresses the manual-review feedback on version 0.1.0.
 
-1. Description now cites Ratto et al. (1994)
-   <doi:10.1016/0266-9838(94)90023-X> as background on mass-consistent wind
-   adjustment. This is an existing published reference, not a claim that the
-   accompanying TaruWind manuscript has been accepted or published.
+1. Regarding the reference request: the manuscript describing the
+   package-specific reduced-mode and surface-memory formulation is not yet
+   published, and there is currently no public method paper or preprint
+   describing that formulation to cite. We have not added a manuscript
+   citation or substituted a general literature review as its method reference.
 2. Authors@R now includes every author and copyright holder named in the
    bundled PocketFFT header: Martin Reinecke and Peter Bell, Max-Planck-Society,
    Matteo Frigo, Massachusetts Institute of Technology, Tan Ping Liang and
