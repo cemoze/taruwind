@@ -65,7 +65,7 @@ taruwind_modal_prepare <- function(dem, roughness, dx, x0, y0, x, y,
     provenance=list(formulation="six-mode/exact-fetch-memory",height=height,
       depth=depth,source_z0=source_z0,profile_z0=profile_z0,min_scale=min_scale,
       penalty=16*min_scale,reflection=reflection,smoothing_m=0,threads=1L,
-      observations_used=FALSE,package_version="0.1.0")),class="taruwind_modal_response")
+      observations_used=FALSE,package_version="0.1.1")),class="taruwind_modal_response")
 }
 
 #' Apply a current reduced-mode response to target-interpolated wind

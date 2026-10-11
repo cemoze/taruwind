@@ -3,5 +3,5 @@ bibentry(
   title = "TaruWind: Reduced-Mode Terrain and Surface Wind Downscaling",
   author = person("Cem", "Özen"),
   year = "2026",
-  note = "R package version 0.1.0"
+  note = "R package version 0.1.1"
 )

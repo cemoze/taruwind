@@ -1,8 +1,25 @@
 Package: taruwind
 Type: Package
 Title: Reduced-Mode Terrain and Surface Wind Downscaling
-Version: 0.1.0
-Authors@R: person("Cem", "Özen", role = c("aut", "cre"), email = "ozenc@itu.edu.tr")
+Version: 0.1.1
+Authors@R: c(
+    person("Cem", "Özen", role = c("aut", "cre"),
+        email = "ozenc@itu.edu.tr"),
+    person("Martin", "Reinecke", role = "ctb",
+        comment = "Author of bundled PocketFFT code"),
+    person("Peter", "Bell", role = c("ctb", "cph"),
+        comment = "Bundled PocketFFT code only"),
+    person("Matteo", "Frigo", role = c("ctb", "cph"),
+        comment = "Odd-sized DCT-IV code in bundled PocketFFT only"),
+    person("Tan Ping", "Liang", role = c("ctb", "cph"),
+        comment = "Size-search code in bundled PocketFFT only"),
+    person("Cris", "Luengo", role = c("ctb", "cph"),
+        comment = "Integer-overflow safeguards in bundled PocketFFT only"),
+    person("Max-Planck-Society", role = "cph",
+        comment = "Bundled PocketFFT code only"),
+    person("Massachusetts Institute of Technology", role = "cph",
+        comment = "Odd-sized DCT-IV code in bundled PocketFFT only")
+    )
 Description: Constructs reusable local wind responses using a neutral
     terrain-following reduced-vertical-mode adjustment and exact raster-ray
     integration of finite-fetch surface memory. Explicit metric-grid inputs
@@ -10,6 +27,8 @@ Description: Constructs reusable local wind responses using a neutral
     profile. Prepared responses can be applied to wind-component time series
     without target-site wind calibration. This diagnostic approximation does
     not resolve turbulence or guarantee conservation of the final field.
+    Background on mass-consistent wind adjustment is provided by
+    Ratto et al. (1994) <doi:10.1016/0266-9838(94)90023-X>.
 License: MIT + file LICENSE
 Copyright: See inst/COPYRIGHTS for bundled third-party components.
 Encoding: UTF-8

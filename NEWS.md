@@ -1,3 +1,16 @@
+# taruwind 0.1.1
+
+CRAN resubmission candidate; not yet accepted or published on CRAN.
+
+- Declare all bundled PocketFFT contributors and copyright holders in
+  Authors@R, with comments restricting their roles to that third-party code.
+  Cem Özen remains the sole package author and maintainer.
+- Add Ratto et al. (1994) as background on mass-consistent wind adjustment
+  in Description; this does not claim that the TaruWind formulation is an
+  implementation of that review or that its own manuscript is published.
+- Update version metadata and the response provenance version string.
+  No solver, surface-memory formula or numerical setting changed.
+
 # taruwind 0.1.0
 
 First public-version candidate, not yet published.

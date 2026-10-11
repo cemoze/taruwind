@@ -1,9 +1,57 @@
-## CRAN submission snapshot: taruwind 0.1.0
+## Resubmission: taruwind 0.1.1
+
+This resubmission addresses the manual-review feedback on version 0.1.0.
+
+1. Description now cites Ratto et al. (1994)
+   <doi:10.1016/0266-9838(94)90023-X> as background on mass-consistent wind
+   adjustment. This is an existing published reference, not a claim that the
+   accompanying TaruWind manuscript has been accepted or published.
+2. Authors@R now includes every author and copyright holder named in the
+   bundled PocketFFT header: Martin Reinecke and Peter Bell, Max-Planck-Society,
+   Matteo Frigo, Massachusetts Institute of Technology, Tan Ping Liang and
+   Cris Luengo. Third-party code authors have ctb roles and explicitly named
+   copyright holders have cph roles. Each comment identifies the relevant
+   PocketFFT component, so these credits do not imply authorship or ownership
+   of the original TaruWind code.
+3. The full upstream BSD-3-Clause notice remains unchanged in
+   src/pocketfft_hdronly.h and inst/COPYRIGHTS. The MIT license of the original
+   TaruWind code is unchanged. Cem Ozen remains the sole aut and cre.
+4. Version metadata is increased to 0.1.1 to distinguish this candidate from
+   the previous submission. Apart from the response provenance version string,
+   no R calculation code, C++ code, numerical setting or prediction formula
+   has changed.
+
+### Checks for version 0.1.1
+
+Linux R 4.6.1, full R CMD check --as-cran including the PDF manual:
+0 errors, 0 warnings, 3 notes. All 106 test expectations pass, with no test
+warnings or skips.
+
+The notes concern:
+
+- A new submission.
+- A compiler flag (-mno-omit-leaf-frame-pointer) inherited from the installed
+  R toolchain, not specified by the package.
+- HTML Tidy not being available locally; the PDF manual check passed.
+
+The existing source header and installed copyright notice are byte-for-byte
+unchanged. A metadata audit confirms that Cem Ozen is the only aut and cre
+and remains the only author in the package citation.
+
+The first local check used an inherited Conda PROJ_DATA setting that pointed
+terra to an incompatible PROJ database and caused three raster test errors.
+Rerunning the same archive with PROJ_DATA=/usr/share/proj resolved these
+environment-only failures without any package-code change.
+
+No new hosted Windows or macOS check result is claimed here. The checks below
+are historical results for version 0.1.0, not results for this candidate.
+
+## Previous CRAN submission snapshot: taruwind 0.1.0
 
 Maintainer: Cem Özen <ozenc@itu.edu.tr>
 
-The exact source archive was submitted to CRAN on 28 September 2026 and is
-pending manual inspection. Submission is not acceptance or publication.
+The exact source archive was submitted to CRAN on 28 September 2026 and was
+returned for metadata corrections. Submission is not acceptance or publication.
 
 Submitted archive: `taruwind_0.1.0.tar.gz`
 
