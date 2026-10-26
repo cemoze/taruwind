@@ -1,18 +1,18 @@
 # TaruWind
 
-[![CRAN version](https://www.r-pkg.org/badges/version/taruwind)](https://CRAN.R-project.org/package=taruwind)
-[![CRAN checks](https://badges.cranchecks.info/worst/taruwind.svg)](https://CRAN.R-project.org/web/checks/check_results_taruwind.html)
-[![R-CMD-check](https://github.com/cemoze/taruwind/actions/workflows/R-CMD-check.yaml/badge.svg?branch=main)](https://github.com/cemoze/taruwind/actions/workflows/R-CMD-check.yaml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![DOI](https://img.shields.io/badge/DOI-10.32614%2FCRAN.package.taruwind-blue)](https://doi.org/10.32614/CRAN.package.taruwind)
+**Terrain-aware wind downscaling for R.**
 
-TaruWind is available on [CRAN](https://CRAN.R-project.org/package=taruwind).
-The first CRAN release, **0.1.1**, was published on **21 October 2026**.
-The released package has passed CRAN's automated package checks on
-**Linux, Windows and macOS**. The badges above link to the current CRAN and
-GitHub test results; the checks cover package installation, offline examples
-and automated tests.
-This repository remains the development and issue-tracking home of the package.
+[![CRAN version](https://www.r-pkg.org/badges/version/taruwind)](https://CRAN.R-project.org/package=taruwind) [![CRAN checks](https://badges.cranchecks.info/worst/taruwind.svg)](https://CRAN.R-project.org/web/checks/check_results_taruwind.html) [![R-CMD-check](https://github.com/cemoze/taruwind/actions/workflows/R-CMD-check.yaml/badge.svg?branch=main)](https://github.com/cemoze/taruwind/actions/workflows/R-CMD-check.yaml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![DOI](https://img.shields.io/badge/DOI-10.32614%2FCRAN.package.taruwind-blue)](https://doi.org/10.32614/CRAN.package.taruwind)
+
+TaruWind combines reduced-mode terrain responses with memory of upwind surface
+roughness to estimate near-surface wind speed over complex terrain. Prepare a
+local response once, then reuse it with atmospheric wind time series, without
+target-site wind calibration.
+
+Available on **CRAN**, with automated package checks on **Linux, Windows and
+macOS**. The badges link to the current release and test results.
+
+[Getting started](inst/doc/getting-started.md) · [Reference manual](https://CRAN.R-project.org/web/packages/taruwind/refman/taruwind.html) · [Release notes](NEWS.md) · [Report an issue](https://github.com/cemoze/taruwind/issues)
 
 ## Installation
 
@@ -27,12 +27,15 @@ The geographic workflow also uses optional data-access and raster packages;
 follow Section 1 of the getting-started guide for their installation and CDS
 credentials. Installing TaruWind does not download environmental datasets.
 
-## Start here
+## Getting started
 
 **[Step-by-step getting-started guide](inst/doc/getting-started.md)** —
 one connected Istanbul example, from coordinates and downloads to interpreting
 results, extracting the four raw ERA5 nodes, saving/reusing responses, adding
 a second site and mapping terrain inputs and a small local area.
+
+<details>
+<summary>Open the guide in R, or rebuild its HTML copy</summary>
 
 The formatted guide is also installed locally:
 
@@ -51,6 +54,10 @@ pandoc inst/doc/getting-started.md --standalone --toc \
   -o inst/doc/getting-started.html
 ```
 
+</details>
+
+### Choose your workflow
+
 Start with **`taruwind_downscale()`** when you have coordinates and a period.
 You do not need to call all exported functions in sequence.
 
@@ -68,6 +75,9 @@ You do not need to call all exported functions in sequence.
 | Inputs only, without solving | `taruwind_download_era5()`, `taruwind_download_copernicus_dem()`, `taruwind_download_worldcover()` |
 | Profile assumptions / resource policy | `taruwind_source_profile()`, `taruwind_neutral_depth()`, `taruwind_limits()`, `taruwind_workers()` |
 | Inspect cached files and total size without deleting data | `taruwind_cache_info()` |
+
+<details>
+<summary>Workflow details, output columns, request limits and a local-map example</summary>
 
 The geographic workflow reports six stages, beginning with an ERA5 availability
 check before terrain preparation. It labels cached versus downloaded ERA5
@@ -126,11 +136,11 @@ raw ERA5 nodes → save responses → map aligned inputs → try the local area
 example → expand to a suitable domain and period. An initial terrain
 solve is distinct from the much cheaper application of a prepared response.
 
-## Technical overview and examples
+</details>
 
-Developed and maintained by Cem Özen (ozenc@itu.edu.tr).
-Use the CRAN release for routine installation and this public GitHub repository
-for development history, documentation and bug reports.
+## Examples
+
+### Explicit terrain and roughness inputs
 
 The current neutral reduced-mode terrain solver and finite-fetch surface
 memory are exposed through an explicit metric-grid interface. Older research
@@ -149,6 +159,9 @@ taruwind_modal_predict(response, u = c(3, 0), v = c(4, 0))
 
 The two predicted speeds are 5 and 0 m/s on flat, homogeneous,
 matched-reference terrain.
+
+<details>
+<summary>Coordinate conventions, input preparation and batch processing</summary>
 
 Rows run south to north. Coordinates are projected metres; roughness values
 are aerodynamic lengths in metres, not land-cover class codes. `source_z0`
@@ -171,6 +184,10 @@ acquisition is automatic unless a raster is supplied. Roughness may be a
 georeferenced aerodynamic-length raster or explicitly `"worldcover"` to fetch
 ESA WorldCover 2021 and apply the documented WindKit lookup. WorldCover is
 not presented as a replacement for the study's CORINE-based inputs.
+
+</details>
+
+### Geographic wind time series
 
 This geographic example requires CDS credentials and acceptance of the
 relevant dataset terms. TaruWind obtains the documented reference profile
@@ -199,6 +216,9 @@ inspect and save both the rows and their attributes. Complete DEM/roughness
 rasters and four-node raw wind series are retrieved separately; they are not
 embedded in the printed prediction tibble.
 
+<details>
+<summary>Multi-site outputs, source-profile conventions and data access</summary>
+
 `sites` also accepts a data frame or matrix with `lon`/`lat` columns and an
 optional `site_id`. Output is a tibble; UTC is default, `local_tz = TRUE` adds
 coordinate-specific local timestamps with `lutz`. Geographic downloads and
@@ -220,6 +240,10 @@ submitting it again. Install optional `ncdf4` for this operation.
 Automatic CORINE acquisition is not included in this release. The
 geographic workflow is a new input-grid convenience layer, not a byte-for-byte
 reproduction of the archived study grids. The current solver itself is unchanged.
+
+</details>
+
+## Checks and scope
 
 The `.github/workflows/R-CMD-check.yaml` workflow checks Linux, Windows and
 macOS. The published 0.1.1 package is also checked by CRAN: all 12 listed
@@ -246,3 +270,9 @@ citation("taruwind")
 ```
 
 Report the package version used alongside the citation for reproducibility.
+
+---
+
+Developed and maintained by **Cem Özen** (ozenc@itu.edu.tr).
+Use the CRAN release for routine installation and this repository for
+development history, documentation and [bug reports](https://github.com/cemoze/taruwind/issues).
