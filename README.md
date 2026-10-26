@@ -1,4 +1,23 @@
-# TaruWind 0.1.1
+# TaruWind
+
+[![CRAN version](https://www.r-pkg.org/badges/version/taruwind)](https://CRAN.R-project.org/package=taruwind)
+
+TaruWind is available on [CRAN](https://CRAN.R-project.org/package=taruwind).
+The first CRAN release, **0.1.1**, was published on **21 October 2026**.
+This repository remains the development and issue-tracking home of the package.
+
+## Installation
+
+Install the released package from CRAN using R 4.2.0 or later:
+
+```r
+install.packages("taruwind")
+library(taruwind)
+```
+
+The geographic workflow also uses optional data-access and raster packages;
+follow Section 1 of the getting-started guide for their installation and CDS
+credentials. Installing TaruWind does not download environmental datasets.
 
 ## Start here
 
@@ -101,9 +120,9 @@ solve is distinct from the much cheaper application of a prepared response.
 
 ## Technical overview and examples
 
-Local first-release candidate by Cem Özen (ozenc@itu.edu.tr).
-Prepared in the private GitHub repository `cemoze/taruwind` for cross-platform
-release checks. Not yet published on CRAN or as a public release.
+Developed and maintained by Cem Özen (ozenc@itu.edu.tr).
+Use the CRAN release for routine installation and this public GitHub repository
+for development history, documentation and bug reports.
 
 The current neutral reduced-mode terrain solver and finite-fetch surface
 memory are exposed through an explicit metric-grid interface. Older research
@@ -195,13 +214,27 @@ geographic workflow is a new input-grid convenience layer, not a byte-for-byte
 reproduction of the archived study grids. The current solver itself is unchanged.
 
 The `.github/workflows/R-CMD-check.yaml` workflow checks Linux, Windows and
-macOS. All three completed with `Status: OK` for the base source snapshot in
-GitHub Actions run 35756209012 (22 September 2026). The input-validation
-correction in this candidate has passed local Linux checks; its exact source
-has not yet had hosted Windows/macOS checks. Package checks cover installation,
-offline examples and tests, not live downloading on every platform.
+macOS. The published 0.1.1 package is also checked by CRAN: all 12 listed
+environments reported `OK` on 26 October 2026. See the
+[current CRAN check results](https://CRAN.R-project.org/web/checks/check_results_taruwind.html)
+and [GitHub Actions](https://github.com/cemoze/taruwind/actions) for their
+respective current status. Package checks cover installation, offline examples
+and tests, not live downloading on every platform.
 
 The model is neutral and diagnostic; separation, thermal circulations and
 canopy displacement are not explicitly resolved. The mapped source/target
 profile convention must be chosen explicitly. Evaluation above 10 m is not
 claimed by this interface; supported numeric heights extend up to 100 m.
+
+## Citation
+
+Özen, C. (2026). *TaruWind: Reduced-Mode Terrain and Surface Wind Downscaling*.
+R package version 0.1.1. <https://doi.org/10.32614/CRAN.package.taruwind>
+
+Retrieve the citation supplied with your installed version using:
+
+```r
+citation("taruwind")
+```
+
+Report the package version used alongside the citation for reproducibility.

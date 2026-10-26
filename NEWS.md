@@ -1,6 +1,13 @@
 # taruwind 0.1.1
 
-CRAN resubmission candidate; not yet accepted or published on CRAN.
+First CRAN release, published on 21 October 2026.
+
+- Install the released package with `install.packages("taruwind")`.
+- CRAN package DOI: <https://doi.org/10.32614/CRAN.package.taruwind>.
+- Post-publication documentation refresh: update CRAN installation instructions,
+  publication status, citation metadata and links in the GitHub README and
+  getting-started guide. This documentation update does not change the
+  numerical code or the already published CRAN archive.
 
 - Declare all bundled PocketFFT contributors and copyright holders in
   Authors@R, with comments restricting their roles to that third-party code.
@@ -10,7 +17,7 @@ CRAN resubmission candidate; not yet accepted or published on CRAN.
 
 # taruwind 0.1.0
 
-First public-version candidate, not yet published.
+Earlier development and submission candidate; not a separate CRAN release.
 
 - Review candidate fixes: factor-coordinate labels are parsed as coordinates;
   missing/blank site identifiers and unknown local time zones are rejected.
@@ -30,10 +37,10 @@ First public-version candidate, not yet published.
   and enforced reflected-grid limits for multi-site workflows.
 - Ten-calendar-year point-request and seven-day local-map limits, with reusable
   area responses for consecutive batches.
-- The base source snapshot passed Linux, Windows and macOS package checks in
-  the private GitHub repository. This input-validation correction has been
-  checked locally on Linux; its exact source has not yet had hosted
-  Windows/macOS checks.
+- Historical candidate checks: the base source snapshot passed Linux, Windows
+  and macOS checks, followed by a local Linux check of the input-validation
+  correction. Subsequent cross-platform checks and the first CRAN publication
+  are recorded under version 0.1.1 above.
 - Automatic latitude-based neutral depth and resumable CDS FSR reference
   acquisition, with an explicit diagnostic convention and provenance.
 

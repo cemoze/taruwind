@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "Please cite TaruWind and the associated paper when published."
+message: "Please cite the TaruWind R package using its CRAN DOI."
 title: "TaruWind: reduced-mode terrain and surface wind downscaling"
 type: software
 authors:
@@ -7,4 +7,8 @@ authors:
     given-names: Cem
     email: ozenc@itu.edu.tr
 version: 0.1.1
+date-released: 2026-10-21
+doi: 10.32614/CRAN.package.taruwind
+url: "https://CRAN.R-project.org/package=taruwind"
+repository-code: "https://github.com/cemoze/taruwind"
 license: MIT

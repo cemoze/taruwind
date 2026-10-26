@@ -1,5 +1,5 @@
 ---
-title: "TaruWind 0.1.0 — A first wind-downscaling workflow in Istanbul"
+title: "TaruWind 0.1.1 — A first wind-downscaling workflow in Istanbul"
 lang: en
 ---
 
@@ -22,8 +22,16 @@ example. No local NetCDF or raster files need to be prepared manually.
 ## 1. Prepare R and data access
 
 Start with the software requirements, before defining a site or requesting
-data. In RStudio, select **Session → Restart R** (`Ctrl+Shift+F10`). Check which
-packages are already available; this downloads nothing:
+data. In RStudio, select **Session → Restart R** (`Ctrl+Shift+F10`).
+TaruWind is [available on CRAN](https://CRAN.R-project.org/package=taruwind).
+Using R 4.2.0 or later, install it once (or run this again to update an older
+installation):
+
+```r
+install.packages("taruwind")
+```
+
+Then check which packages are already available; this check downloads nothing:
 
 ```r
 needed = c("taruwind", "terra", "ncdf4", "Rarr", "lutz")
@@ -45,9 +53,8 @@ if (!requireNamespace("Rarr", quietly = TRUE)) {
 ```
 
 `terra`, `ncdf4` and `Rarr` support this automatic download workflow. `lutz`
-is needed only if you later request automatic local time zones. TaruWind is
-not yet on CRAN; use its locally installed package rather than
-`install.packages("taruwind")`.
+is needed only if you later request automatic local time zones. These are
+optional packages rather than requirements for the explicit matrix interface.
 
 Now load the package and confirm which local version R is using:
 
@@ -58,7 +65,8 @@ find.package("taruwind")
 ?taruwind
 ```
 
-The package version shown here should be 0.1.0 for this guide.
+This guide accompanies CRAN release **0.1.1**, published on 21 October 2026.
+If a later release is installed, consult its release notes for any changes.
 
 ### CDS access
 
@@ -586,10 +594,11 @@ promise that a request below its safety limits will be fast or fit in memory.
 
 This version produces point wind-speed time series and bounded local raster
 maps, not national atlases, interactive maps, downscaled direction/u/v or
-CERRA downloads. Linux, Windows
-and macOS package checks passed in GitHub Actions run 35756209012 on
-22 September 2026. Live data integration was additionally checked on Linux;
-the platform checks do not download environmental datasets.
+CERRA downloads. The published 0.1.1 package reported `OK` in all 12
+[CRAN check environments](https://CRAN.R-project.org/web/checks/check_results_taruwind.html)
+as checked on 26 October 2026, including Linux, Windows and macOS. Live data
+integration was additionally checked on Linux; the platform checks do not
+download environmental datasets.
 
 ```r
 ?taruwind_downscale
