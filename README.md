@@ -1,9 +1,17 @@
 # TaruWind
 
 [![CRAN version](https://www.r-pkg.org/badges/version/taruwind)](https://CRAN.R-project.org/package=taruwind)
+[![CRAN checks](https://badges.cranchecks.info/worst/taruwind.svg)](https://CRAN.R-project.org/web/checks/check_results_taruwind.html)
+[![R-CMD-check](https://github.com/cemoze/taruwind/actions/workflows/R-CMD-check.yaml/badge.svg?branch=main)](https://github.com/cemoze/taruwind/actions/workflows/R-CMD-check.yaml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![DOI](https://img.shields.io/badge/DOI-10.32614%2FCRAN.package.taruwind-blue)](https://doi.org/10.32614/CRAN.package.taruwind)
 
 TaruWind is available on [CRAN](https://CRAN.R-project.org/package=taruwind).
 The first CRAN release, **0.1.1**, was published on **21 October 2026**.
+The released package has passed CRAN's automated package checks on
+**Linux, Windows and macOS**. The badges above link to the current CRAN and
+GitHub test results; the checks cover package installation, offline examples
+and automated tests.
 This repository remains the development and issue-tracking home of the package.
 
 ## Installation
